@@ -1,0 +1,36 @@
+<launch>
+    <arg name="world" default="doomsday.world"/>
+    <arg name="vehicle" default="typhoon_vision"/>
+    <arg name="gui" default="true"/>
+
+
+    <arg name="kinky_walk_noise_flag" default="false" />
+    <arg name="optic_flow_type" default="matched_filter" />
+    <arg name="kink_eccentricity" default="0.66" />
+
+    <arg name="do_height_adjust_outbound" default="False" />
+    <arg name="height_adjust_random_seed" default="2020" />
+    <arg name="height_adjust_amplitude" default="1.0" />
+    <arg name="height_adjust_points" default="10" />
+
+
+    MAVROS NODE
+    <include file="$(find px4)/launch/mavros_posix_sitl.launch">
+        <arg name="world" default="$(arg world)"/>
+        <arg name="verbose" value="true"/>
+        <arg name="vehicle" value="$(arg vehicle)"/>
+        <!--<arg name="interactive" value="false"/>-->
+        <!--<arg name="respawn_gazebo" value="true"/>-->
+        <arg name="respawn_mavros" value="false"/>
+        <arg name="gui" value="$(arg gui)"/>
+    </include>
+
+    VISION NODE
+    <node pkg="vision" type="vision.py" name="pyx4_vision" output="screen"/>
+
+     <node pkg="rosbag" type="record" name="rosbag_record_diag"
+       args="/mavros/local_position/pose /mavros/local_position/velocity_local /cam_0/image_raw /cam_45/image_raw /cam_n45/image_raw"/>                   
+
+ 
+
+</launch>
