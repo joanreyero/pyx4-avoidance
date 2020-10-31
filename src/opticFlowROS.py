@@ -22,8 +22,9 @@ NODE_NAME = 'optic_flow'
 
 class OpticFlowROS():
    ##### TODO: change camerainfo to whatever it is
-   ### TODO: Add remaining cameras
-   def __init__(self, cam_0_topic='/resize_img/image', cam_0_info="/resize_img/cameraInfo", wait_for_imtopic_s=100):
+   def __init__(self, cam_0_topic='/resize_img/image', 
+                cam_0_info="/resize_img/cameraInfo", 
+                wait_for_imtopic_s=100):
       self.cam_0 = None
       self.cam_0_topic = cam_0_topic
       self.cam_0_info = cam_0_info
@@ -88,7 +89,7 @@ class OpticFlowROS():
       """Add the camera_0 instance
 
       Args:
-          data (CameraInfo): the camera info topic.
+         data (CameraInfo): the camera info topic.
       """
       if not self.cam_0:
          self.cam_0 = Camera(data)
@@ -123,8 +124,9 @@ class OpticFlowROS():
             # if we don't subtract the initial camera time the frame difference can be 0.0 due to precision errors
             if not self.initial_camera_time:
                self.initial_camera_time = this_image_time
+               
             this_image_time = this_image_time - self.initial_camera_time   
-         
+            self.OF_cam_0_module.step(this_image, this_image_time)
                
       
    
