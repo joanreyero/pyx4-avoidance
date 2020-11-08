@@ -1,7 +1,7 @@
 <launch>
     <arg name="world" default="doomsday.world"/>
     <arg name="vehicle" default="typhoon_vision"/>
-    <arg name="gui" default="true"/>
+    <arg name="gui" default="false"/>
 
 
     <arg name="kinky_walk_noise_flag" default="false" />
@@ -17,7 +17,7 @@
     MAVROS NODE
     <include file="$(find px4)/launch/mavros_posix_sitl.launch">
         <arg name="world" default="$(arg world)"/>
-        <arg name="verbose" value="false"/>
+        <arg name="verbose" value="true"/>
         <arg name="vehicle" value="$(arg vehicle)"/>
         <!--<arg name="interactive" value="false"/>-->
         <!--<arg name="respawn_gazebo" value="true"/>-->

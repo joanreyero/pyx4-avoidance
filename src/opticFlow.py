@@ -9,9 +9,8 @@ import cv2
 import numpy as np
 import os
 
-NODE_NAME = 'optic_flow'
 
-class OpticFlow():
+class OpticFlow(object):
     """ Class to generate optic flow
     """
     def __init__(self, camera_instance):
@@ -29,6 +28,8 @@ class OpticFlow():
 
         self.initialised = False
         self.__flow_iterations = 0
+
+        self.viewing_directions = None
 
 
     @property
@@ -92,3 +93,10 @@ class OpticFlow():
                 warn('this is the same image message time stamp')
                 print('latest timestamp {} is the same as the previous image message time'.
                       format(self._time_array[0]))
+
+            rospy.loginfo(self.flow.shape)
+
+            return self.flow
+
+    def plot_range(self):
+        

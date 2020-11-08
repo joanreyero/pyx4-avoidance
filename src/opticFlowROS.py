@@ -2,7 +2,8 @@
 from __future__ import division
 import numpy as np
 from sensor_msgs.msg import CameraInfo, Image
-from opticFlow import OpticFlow 
+from geometry_msgs.msg import TwistStamped
+from flivverOpticFlow import FlivverOpticFlow
 from camera import Camera
 import rospy
 import sys
@@ -21,9 +22,9 @@ NODE_NAME = 'optic_flow'
 
 
 class OpticFlowROS():
-   ##### TODO: change camerainfo to whatever it is
+   
    def __init__(self, cam_0_topic='/resize_img/image', 
-                cam_0_info="/resize_img/cameraInfo", 
+                cam_0_info="/resize_img/camera_info", 
                 wait_for_imtopic_s=100):
       self.cam_0 = None
       self.cam_0_topic = cam_0_topic
@@ -33,12 +34,13 @@ class OpticFlowROS():
       self.time_this_image = 0.0
       self.this_image = None
       self.initial_camera_time = None  # to avoid loosing information
+
+      self.vel = np.zeros(3)
       
       self.subscribers(wait_for_imtopic_s)
       
-      self.OF_cam_0_module = OpticFlow(camera_instance=self.cam_0)
+      self.OF_cam_0_module = FlivverOpticFlow(camera_instance=self.cam_0)
    
-   # For now only one cam, add more
    def subscribers(self, wait_for_imtopic_s):
       """Subscribe to topics
 
@@ -51,6 +53,10 @@ class OpticFlowROS():
       
       self.cam_0_subs = rospy.Subscriber(
          self.cam_0_info, CameraInfo, self.cam_0_info_cb
+      )
+
+      self.vel_subs = rospy.Subscriber(
+         '/mavros/local_position/velocity_local', TwistStamped, self.vel_subs_cb
       )
       
       try:
@@ -115,8 +121,12 @@ class OpticFlowROS():
       # If there is a CvBridge error, print it      
       except CvBridgeError as err:
          print(err)
+
+   def vel_subs_cb(self, data):
+      v = data.twist.linear
+      self.vel = np.array([v.x, v.y, v.z])
          
-   def main(self):
+   def main(self, plot=False):
       while not rospy.is_shutdown():
          if not self.image_queue.empty():
             this_image, this_image_time = self.image_queue.get()
@@ -127,10 +137,21 @@ class OpticFlowROS():
                
             this_image_time = this_image_time - self.initial_camera_time   
             self.OF_cam_0_module.step(this_image, this_image_time)
+            range = self.OF_cam_0_module.range(self.vel)
+            rospy.loginfo(range)
+
+            
+
+      
+            
+
+            
                
       
-   
-   
-      
+if __name__ == '__main__':
+   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
+   rospy.loginfo('\n\n STARTING ROS OF MODULE\n\n')
+   OF = OpticFlowROS()
+   OF.main()
       
         
