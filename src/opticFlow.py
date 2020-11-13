@@ -97,6 +97,3 @@ class OpticFlow(object):
             rospy.loginfo(self.flow.shape)
 
             return self.flow
-
-    def plot_range(self):
-        

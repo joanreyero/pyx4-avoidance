@@ -2,6 +2,7 @@
     <arg name="world" default="doomsday.world"/>
     <arg name="vehicle" default="typhoon_vision"/>
     <arg name="gui" default="true"/>
+    <arg name="bag_name" default="try"/>
 
 
     <arg name="kinky_walk_noise_flag" default="false" />
@@ -74,8 +75,13 @@
     VISION NODE
     <node pkg="vision" type="vision.py" name="pyx4_vision" output="screen"/>
     
-    <!-- <node pkg="rosbag" type="record" name="rosbag_record_diag"
-       args="/mavros/local_position/pose /mavros/local_position/velocity_local /cam_0/image_raw /cam_45/image_raw /cam_n45/image_raw"/> -->                  
+    <node pkg="rosbag" type="record" name="bagger" output="screen"
+          args="
+          -O $(find vision)/src/analytics/data/$(arg bag_name).bag
+          /mavros/local_position/pose
+          /mavros/local_position/velocity_local
+          /pyx4_node/pyx4_state
+         "/>                  
     
     Optic flow node
     <node pkg="vision" type="opticFlowROS.py" name="optic_flow" output="screen"/>
