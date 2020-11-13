@@ -1,25 +1,3 @@
-{
-    "configurations": [
-        {
-            "browse": {
-                "databaseFilename": "",
-                "limitSymbolsToIncludedHeaders": true
-            },
-            "includePath": [
-                "/home/joanreyero/ros_workspaces/pyx4_ws/devel/include/**",
-                "/opt/ros/melodic/include/**",
-                "/home/joanreyero/ros_workspaces/pyx4_ws/src/avoidance/avoidance/include/**",
-                "/home/joanreyero/ros_workspaces/pyx4_ws/src/avoidance/global_planner/include/**",
-                "/home/joanreyero/ros_workspaces/pyx4_ws/src/avoidance/local_planner/include/**",
-                "/home/joanreyero/ros_workspaces/pyx4_ws/src/avoidance/safe_landing_planner/include/**",
-                "/usr/include/**"
-            ],
-            "name": "ROS",
-            "intelliSenseMode": "gcc-x64",
-            "compilerPath": "/opt/gcc-arm-none-eabi-7-2017-q4-major/bin/arm-none-eabi-gcc",
-            "cStandard": "gnu11",
-            "cppStandard": "gnu++14"
-        }
-    ],
-    "version": 4
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:05c51f24362f0cb502cb1bd5db9273c7941795c2d38a71e0efbac08f59435f80
+size 1034

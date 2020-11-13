@@ -1,6 +1,3 @@
-{
-    "python.autoComplete.extraPaths": [
-        "/home/joanreyero/ros_workspaces/pyx4_ws/devel/lib/python2.7/dist-packages",
-        "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:d2c867e3cbe8714f97bdf81f71f64eface2419f675079b930586d23964c43825
+size 189

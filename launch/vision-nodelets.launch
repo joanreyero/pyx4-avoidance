@@ -1,31 +1,3 @@
-<launch>
-
-
-    <arg name="device"/>
-
-
-    <!--Proc-->
-    todo - probably don't need to run this whole thing - just need to do 1) mono, 2) rectification 3) resize
-    <node if="$(arg proc)"
-        pkg="image_proc" type="image_proc" name="image_proc" ns="$(arg camera)">
-    </node>
-
-    Resizing info:
-    base ratio: 47:30
-    <!-- Video resizing -->
-    <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img">
-        <param name="use_scale" type="bool" value="false" />
-        <param name="width" type="int" value="235" />
-        <param name="height" type="int" value="150" />
-        <param name="interpolation" type="int" value="0" />
-        reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
-
-        <!-- remap input topics -->
-      <remap from="image" to="/mv_26804011/image_mono"/>
-      <remap from="camera_info" to="/mv_26804011/camera_info"/>
-      <!-- remap output topics -->
-      <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
-      <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
-    </node>
-
-</launch>
+version https://git-lfs.github.com/spec/v1
+oid sha256:dc7711758eb52f790d048a6805fdcd6c32c0ec0988e4bbf1841a3f48b0322bc2
+size 1147
