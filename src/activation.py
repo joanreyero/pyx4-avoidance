@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:584c82d866ecc5c84d6366b496f23f61c1aa917f284cbfcdc977e3ea49a5d1f6
-size 335
+import numpy as np
+from matchedFilters import MatchedFilter
+
+def get_activation(flow, mf):
+    """Get the activation of an avoidance neuron.
+
+    Args:
+        flow (np.ndarray): optic flow array
+        mf (np.ndarray): matched filter array
+
+    Returns:
+        float: activation
+    """
+    return np.sum(flow * mf) / flow.size
+    

@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4ec11f749036f176c98da9000b98d24a6f2c694c39839aafeb2a9efc0eb6c10c
-size 330
+#!/usr/bin/env python
+## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
+
+from distutils.core import setup
+from catkin_pkg.python_setup import generate_distutils_setup
+
+# fetch values from package.xml
+setup_args = generate_distutils_setup(
+    packages=['vision'],
+    package_dir={'': 'src'},
+    )
+setup(**setup_args)
