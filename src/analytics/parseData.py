@@ -19,6 +19,23 @@ def make_name(marker, distance):
     return str(marker) + '-velocity--dist-' + str(distance) + '.csv'
 
 
+def is_vel(file):
+    mark = file.find('-')
+    velocity = 'velocity'
+    return file[ + 1: 1 + len(velocity)] == velocity
+
+
+def get_general_data():
+    files = [f for f in listdir(path) if isfile(join(path, f))]
+    df = pd.DataFrame(columns=[VELOCITY, ACTIVATION, FOVX, POSITION])
+    for file in files:
+        if is_vel(file):
+            print('here')
+            df = parse_vel_for_general(file)
+        else:
+            df = parse_dist_for_general(file)
+
+
 def get_velocity_data(marker, distance):
     """Parse all the CSV files generated from rosbags
     and get the velocity at the stopping time
@@ -81,4 +98,5 @@ if __name__ == '__main__':
     parser.add_argument('--distance', '-d', default=2.0, type=float)
     args = parser.parse_args()
 
-    main(args.marker, parse_bagsP=args.parse_bags)
+    #main(args.marker, parse_bagsP=args.parse_bags)
+    get_general_data()
