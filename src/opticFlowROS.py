@@ -50,15 +50,15 @@ class OpticFlowROS():
       self.cam_iter = [C0, C45, CN45]
 
       self.cam_topics = {
-         CO: cam_0_topic,
+         C0: cam_0_topic,
          C45: cam_45_topic,
          CN45: cam_n45_topic
       }
 
       self.image_queues = {
-         C0: Queue()
-         C45: Queue()
-         CN45: Queue()
+         C0: Queue(),
+         C45: Queue(),
+         CN45: Queue(),
       }
 
       self.image_times = {
@@ -93,8 +93,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam),
-         CN45: self.get_matched_filter(self.cam),
+         C45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, 45.0]),
+         CN45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, -45.0]),
       }
 
       self.data_collection = data_collection
@@ -130,7 +130,7 @@ class OpticFlowROS():
       self.activation_msgs = {
          C0: ActivationMsg(),
          C45: ActivationMsg(),
-         ActivationMsg()
+         CN45: ActivationMsg()
       }
    
    
@@ -148,7 +148,7 @@ class OpticFlowROS():
          self.cam_topics[C45], Image, self.camera_45_cb, queue_size=5)
 
       self.cam_n45_subs = rospy.Subscriber(
-         self.cam_topics[Cn45], Image, self.camera_n45_cb, queue_size=5)
+         self.cam_topics[CN45], Image, self.camera_n45_cb, queue_size=5)
       
       self.cam_info_subs = rospy.Subscriber(
          self.cam_info, CameraInfo, self.cam_info_cb
@@ -160,11 +160,11 @@ class OpticFlowROS():
       
       try:
          rospy.loginfo('waiting for camera topics to be published')
-         image_info_msg = rospy.wait_for_message(self.cam_0_info, CameraInfo, timeout=wait_for_imtopic_s)
+         image_info_msg = rospy.wait_for_message(self.cam_info, CameraInfo, timeout=wait_for_imtopic_s)
          self.cam_frame_h = image_info_msg.height         # 120
          self.cam_frame_w = image_info_msg.width          # 16
          
-         image_msg = rospy.wait_for_message(self.cam_0_topic, Image, timeout=wait_for_imtopic_s)
+         image_msg = rospy.wait_for_message(self.cam_topics[C0], Image, timeout=wait_for_imtopic_s)
 
          rospy.loginfo('image encoding is {}'.format(image_msg.encoding))
          
@@ -232,7 +232,7 @@ class OpticFlowROS():
          
          if time_last_image != self.image_times[cam]:
             # Add the image to the queue
-            self.image_queues[cam].put([self.this_images[cam], self.image_times[cam])
+            self.image_queues[cam].put([self.this_images[cam], self.image_times[cam]])
             
       # If there is a CvBridge error, print it      
       except CvBridgeError as err:
@@ -247,7 +247,7 @@ class OpticFlowROS():
       self.current_distance = (self.distance - 
                                np.sqrt(data.x ** 2 + data.y ** 2))
 
-   def publish_flow(self, flow):
+   def publish_flow(self, flow, cam):
       if self.OF_modules[cam].initialised:
          cols = flow.shape[1]
          flat_flow = list(np.ravel(flow))
@@ -262,10 +262,10 @@ class OpticFlowROS():
          self.activation_msgs[cam].activation = activation
          self.activation_publishers[cam].publish(self.activation_msgs[cam])
 
-   def get_matched_filter(self, cam):
+   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
-         (cam.fovx_deg, cam.fovy_deg)
+         (cam.fovx_deg, cam.fovy_deg), orientation=orientation
       ).matched_filter
        
    def main(self):
@@ -277,19 +277,19 @@ class OpticFlowROS():
                # if we don't subtract the initial camera time 
                # the frame difference can be 0.0 due to precision errors
                if not self.initial_times[cam]:
-                  self.initial_times[cam].get() = this_image_time                  
+                  self.initial_times[cam] = this_image_time                  
                this_image_time = this_image_time - self.initial_times[cam]
 
-               flow = self.OF_modules[0].step(this_image, this_image_time)
+               flow = self.OF_modules[cam].step(this_image, this_image_time)
                self.publish_flow(flow, cam)
                
                if self.OF_modules[cam].initialised:
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
-               if self.data_collection:
-                  rospy.loginfo('Activation: ' + str(activation))
-                  rospy.loginfo('Distance: ' + str(self.current_distance))
+                  if self.data_collection:
+                     rospy.loginfo('Activation: ' + str(activation))
+                     rospy.loginfo('Distance: ' + str(self.current_distance))
 
             if self.data_collection and self.current_distance < 2:
                os.system("rosnode kill --all")

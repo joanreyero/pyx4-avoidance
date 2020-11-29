@@ -89,6 +89,10 @@
           /pyx4_node/pyx4_state
           /pyx4_avoidance_node/optic_flow
           /pyx4_avoidance_node/activation
+          /pyx4_avoidance_node/optic_flow_c45
+          /pyx4_avoidance_node/activation_c45
+          /pyx4_avoidance_node/optic_flow_cn45
+          /pyx4_avoidance_node/activation_cn45
          " if="$(eval save != false)"/>                  
     
     Optic flow node
