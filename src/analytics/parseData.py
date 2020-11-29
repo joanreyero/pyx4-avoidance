@@ -22,18 +22,43 @@ def make_name(marker, distance):
 def is_vel(file):
     mark = file.find('-')
     velocity = 'velocity'
-    return file[ + 1: 1 + len(velocity)] == velocity
+    return file[mark + 1: 2 + len(velocity)] == velocity
 
 
-def get_general_data():
-    files = [f for f in listdir(path) if isfile(join(path, f))]
+def parse_vel_for_general(path, file, df):
+    df_file = pd.read_csv(path + file, index_col=0)
+    return df.append(df_file, ignore_index=True)
+    
+
+def parse_dist_for_general(path, file, df):
+    df_file = pd.read_csv(path + file)
+    fov_mark = file.find('fov-') + len('fov-')
+    fov = int(file[fov_mark : file.find('.csv')])
+    df_file_filt = df_file[[ACTIVATION, VELOCITY, POSITION]]
+    df_file_filt.insert(2, FOVX, fov)
+    df_file_filt = df_file_filt[df_file_filt[POSITION] <= 29]
+    return df.append(df_file_filt, ignore_index=True)
+    
+
+
+def get_general_data(marker):
+    marker = str(marker)
+    path = 'data/'
+    files = [f for f in listdir(path) if isfile(join(path, f)) 
+             and f[:len(marker)] == marker 
+             and f.find('general') == -1]
     df = pd.DataFrame(columns=[VELOCITY, ACTIVATION, FOVX, POSITION])
     for file in files:
         if is_vel(file):
-            print('here')
-            df = parse_vel_for_general(file)
+            df = parse_vel_for_general(path, file, df)
+            
         else:
-            df = parse_dist_for_general(file)
+            df = parse_dist_for_general(path, file, df)
+
+    df[POSITION] = df[POSITION].apply(lambda a: np.around(a, 2))
+    df[VELOCITY] = df[VELOCITY].apply(lambda a: np.around(a, 2))
+
+    df.to_csv(path + marker + '-general.csv')
 
 
 def get_velocity_data(marker, distance):
@@ -54,14 +79,13 @@ def get_velocity_data(marker, distance):
 
     for file in files:
         file_df = pd.read_csv(path + file)
-        temp = file_df.iloc[-1][[VELOCITY, ACTIVATION]]
+        temp = file_df.iloc[-1][[VELOCITY, ACTIVATION, POSITION]]
         temp[VELOCITY] = np.round(temp[VELOCITY], 2)
         temp[FOVX] = file[file.find('fov') + 4:file.find('.csv')]
-        temp[POSITION] = distance
+        temp[POSITION] = np.round(temp[POSITION], 2)
         df = df.append(temp, sort=True, ignore_index=True)
 
     df.to_csv(path + file_name)
-
 
 def parse_bags(marker):
     path = 'bags/'
@@ -87,6 +111,7 @@ def main(marker, distance=2, parse_bagsP=False):
         parse_bags(marker)
 
     get_velocity_data(marker, distance)
+    get_general_data(marker)
     
 
 if __name__ == '__main__':
@@ -98,5 +123,5 @@ if __name__ == '__main__':
     parser.add_argument('--distance', '-d', default=2.0, type=float)
     args = parser.parse_args()
 
-    #main(args.marker, parse_bagsP=args.parse_bags)
-    get_general_data()
+    main(args.marker, parse_bagsP=args.parse_bags)
+    #get_general_data('0')
