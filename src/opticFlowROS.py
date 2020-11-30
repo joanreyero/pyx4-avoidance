@@ -287,7 +287,7 @@ class OpticFlowROS():
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
-                  if self.data_collection:
+                  if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))
                      rospy.loginfo('Distance: ' + str(self.current_distance))
 
