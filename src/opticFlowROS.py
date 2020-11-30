@@ -304,7 +304,7 @@ class OpticFlowROS():
       
 if __name__ == '__main__':
   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
-  OF = OpticFlowROS(NODE_NAME, data_collection=True)
+  OF = OpticFlowROS(NODE_NAME, data_collection=False)
   OF.main()
       
         
