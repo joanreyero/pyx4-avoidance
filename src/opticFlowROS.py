@@ -10,6 +10,7 @@ from pyx4_avoidance.msg import flow as FlowMsg
 from opticFlow import OpticFlow
 from activation import get_activation
 from pyx4_avoidance.msg import activation as ActivationMsg
+from camera_labels import *
 from camera import Camera
 import rospy
 import sys
@@ -25,9 +26,6 @@ bridge = CvBridge()
 
 
 NODE_NAME = 'pyx4_avoidance_node'
-
-
-C0, C45, CN45 = 'cam_0', 'cam_45', 'cam_n45'
 
 
 class OpticFlowROS():
