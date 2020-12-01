@@ -20,10 +20,7 @@ def make_name(marker, distance):
 
 
 def is_vel(file):
-    mark = file.find('-')
-    velocity = 'velocity'
-    return file[mark + 1: 2 + len(velocity)] == velocity
-
+    return '-velocity--dist-' in file
 
 def parse_vel_for_general(path, file, df):
     df_file = pd.read_csv(path + file, index_col=0)
@@ -32,12 +29,13 @@ def parse_vel_for_general(path, file, df):
 
 def parse_dist_for_general(path, file, df):
     df_file = pd.read_csv(path + file)
-    fov_mark = file.find('fov-') + len('fov-')
-    fov = int(file[fov_mark : file.find('.csv')])
-    df_file_filt = df_file[[ACTIVATION, VELOCITY, POSITION]]
-    df_file_filt.insert(2, FOVX, fov)
-    df_file_filt = df_file_filt[df_file_filt[POSITION] <= 29]
-    return df.append(df_file_filt, ignore_index=True)
+    if 'velocity--dist' not in file:
+        fov_mark = file.find('fov-') + len('fov-')
+        fov = int(file[fov_mark : file.find('.csv')])
+        df_file_filt = df_file[[ACTIVATION, VELOCITY, POSITION]]
+        df_file_filt.insert(2, FOVX, fov)
+        df_file_filt = df_file_filt[df_file_filt[POSITION] <= 29]
+        return df.append(df_file_filt, ignore_index=True)
     
 
 
@@ -49,10 +47,8 @@ def get_general_data(marker):
              and f.find('general') == -1]
     df = pd.DataFrame(columns=[VELOCITY, ACTIVATION, FOVX, POSITION])
     for file in files:
-        if is_vel(file):
-            df = parse_vel_for_general(path, file, df)
-            
-        else:
+        print(file)
+        if not is_vel(file):
             df = parse_dist_for_general(path, file, df)
 
     df[POSITION] = df[POSITION].apply(lambda a: np.around(a, 2))
@@ -87,16 +83,16 @@ def get_velocity_data(marker, distance):
 
     df.to_csv(path + file_name)
 
-def parse_bags(marker):
+def parse_bags(marker, distance):
     path = 'bags/'
     bagfiles = [f for f in listdir(path) if isfile(join(path, f)) 
                 and f[:len(marker)] == marker]
 
     for file in bagfiles:
-        reader = AvoidanceBagReader(file[:-4], make_fovs=True)
+        reader = AvoidanceBagReader(file[:-4], make_fovs=True, distance=distance)
 
 
-def main(marker, distance=2, parse_bagsP=False):
+def main(marker, distance=2, parse_bagsP=False, original_dist=30.13):
     """Main method. Parse the bags (optional) and get the velocity data.
 
     Args:
@@ -108,7 +104,7 @@ def main(marker, distance=2, parse_bagsP=False):
     marker = str(marker)
     distance = str(distance)
     if parse_bagsP:
-        parse_bags(marker)
+        parse_bags(marker, original_dist)
 
     get_velocity_data(marker, distance)
     get_general_data(marker)
@@ -121,7 +117,8 @@ if __name__ == '__main__':
                         help='set of data to parse')
     parser.add_argument('--parse-bags', '-b', default=False, type=bool)
     parser.add_argument('--distance', '-d', default=2.0, type=float)
+    parser.add_argument('--original_distance', '-o', default=30.13, type=float)
     args = parser.parse_args()
 
-    main(args.marker, parse_bagsP=args.parse_bags)
+    main(args.marker, parse_bagsP=args.parse_bags, original_dist = args.original_distance)
     #get_general_data('0')

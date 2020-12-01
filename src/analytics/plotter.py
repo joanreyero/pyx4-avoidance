@@ -33,11 +33,11 @@ def plot_activation_distance(filename, msg):
     plt.show()
 
 
-def plot_eg_distances():
-    files = ['0-xvel-10-yvel-00-fov-120', 
-             '0-xvel-20-yvel-00-fov-120', 
-             '0-xvel-30-yvel-00-fov-120',
-             '0-xvel-40-yvel-00-fov-120']
+def plot_eg_distances(marker):
+    files = [marker + '-xvel-10-yvel-00-fov-120', 
+             marker + '-xvel-20-yvel-00-fov-120', 
+             marker + '-xvel-30-yvel-00-fov-120',
+             marker + '-xvel-40-yvel-00-fov-120']
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharey=True)
     data_1 = get_data(files[0])
@@ -79,8 +79,8 @@ def plot_eg_distances():
     plt.show()
 
 
-def plot_eg_velocities():
-    file = '0-velocity--dist-2'
+def plot_eg_velocities(marker):
+    file = marker + '-velocity--dist-2'
     data = get_data(file)
     
     data_1 = data[data[FOVX] == 30]
@@ -128,6 +128,8 @@ def plot_eg_velocities():
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--marker', '-m', type=str, default='0',
+                        help='file to plot from')
     parser.add_argument('--file', '-f', type=str, default='0-xvel-20-yvel-00-fov-12',
                         help='file to plot from')
     parser.add_argument('--type', '-t', default='distance',
@@ -136,7 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('--fov', default=120, type=int,
                         help='fov for the velocity graph')
 
-    parser.add_argument('--msg', '-m', default="", type=str,
+    parser.add_argument('--msg', default="", type=str,
                         help="message to add to the title")
 
 
@@ -150,7 +152,7 @@ if __name__ == '__main__':
         plot_activation_velocity(args.file, args.fov, args.msg)
 
     elif args.type in ['dist-eg', 'd-eg', 'eg-d', 'eg-dist']:
-        plot_eg_distances()
+        plot_eg_distances(args.marker)
 
     elif args.type in ['vel-eg', 'v-eg', 'eg-v', 'eg-vel']:
-        plot_eg_velocities()
+        plot_eg_velocities(args.marker)

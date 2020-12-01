@@ -100,7 +100,8 @@ class OpticFlowROS():
          self.pos_subs = rospy.Subscriber(
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
-         self.distance = 30.13
+         #self.distance = 30.13
+         self.distance = 30.13 - 4.8
          self.current_distance = self.distance
 
 
@@ -302,7 +303,7 @@ class OpticFlowROS():
       
 if __name__ == '__main__':
   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
-  OF = OpticFlowROS(NODE_NAME, data_collection=False)
+  OF = OpticFlowROS(NODE_NAME, data_collection=True)
   OF.main()
       
         
