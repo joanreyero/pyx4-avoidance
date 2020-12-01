@@ -290,7 +290,7 @@ class OpticFlowROS():
                      rospy.loginfo('Activation: ' + str(activation))
                      rospy.loginfo('Distance: ' + str(self.current_distance))
 
-            if self.data_collection and self.current_distance < 2:
+            if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
 
             

@@ -57,7 +57,7 @@ class AvoidanceController(Pyx4_base):
             self.active = True
 
     def is_valid(self, activations):
-        if activations[-1] > 0.4:
+        if activations[-1] * 0 > 0.4:
             activations = map(lambda x: round(x, 1), activations)
             print(activations)
             return (sorted(activations) == list(activations))
@@ -73,7 +73,6 @@ class AvoidanceController(Pyx4_base):
 
     def stop_decision(self, activation, cam):
         rospy.loginfo(activation)
-
         self.activations[cam].append(activation)
         self.valid[cam].append(self.is_valid(self.activations[cam]))
         if sum(self.valid[cam]) == 3:
