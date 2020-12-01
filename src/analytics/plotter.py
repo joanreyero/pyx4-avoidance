@@ -23,7 +23,7 @@ def plot_activation_velocity(filename, fov, msg):
     plt.show()
 
 
-def plot_activation_distance(filename, msg):
+def plot_activation_distance(filename, msg, side=0):
     data = get_data(filename)
     plt.title('Activation over distance to object. ' + msg)
     plt.xlabel('Distance (m)')
