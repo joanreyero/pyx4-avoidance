@@ -2,9 +2,6 @@
     <arg name="world" default="doomsday.world"/>
     <arg name="vehicle" default="typhoon_vision"/>
     <arg name="gui" default="true"/>
-    <arg name="bag_name" default="new"/>
-    <arg name="save" default="false"/>
-    <arg name="xvel" default="1"/>
 
 
     <arg name="kinky_walk_noise_flag" default="false" />
@@ -15,6 +12,7 @@
     <arg name="height_adjust_random_seed" default="2020" />
     <arg name="height_adjust_amplitude" default="1.0" />
     <arg name="height_adjust_points" default="10" />
+    <arg name="vel" value="2.0"/>
 
 
     MAVROS NODE
@@ -76,27 +74,13 @@
         <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
     </node>
 
-    pyx4_avoidance NODE
-    <node pkg="pyx4_avoidance" type="missionAvoidance.py" name="pyx4_avoudance_data_mission" output="screen"
+    <!-- pyx4_avoidance NODE -->
+    <node pkg="pyx4_avoidance" type="avoidanceDemo.py" name="pyx4_avoidance_demo" output="screen"
         args="
-          --xvel $(arg xvel)
-          "/>    
-    <node pkg="rosbag" type="record" name="bagger" output="screen"
-          args="
-          -O $(find pyx4_avoidance)/src/analytics/bags/$(arg save).bag
-          /mavros/local_position/pose
-          /mavros/local_position/velocity_local
-          /pyx4_node/pyx4_state
-          /pyx4_avoidance_node/optic_flow
-          /pyx4_avoidance_node/activation
-          /pyx4_avoidance_node/optic_flow_c45
-          /pyx4_avoidance_node/activation_c45
-          /pyx4_avoidance_node/optic_flow_cn45
-          /pyx4_avoidance_node/activation_cn45
-         " if="$(eval save != false)"/>                  
-    
-    Optic flow node
-    <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="screen"/>
+          --velocity $(arg vel)
+          "/>   
+
+    <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="log"/>
  
 
 </launch>

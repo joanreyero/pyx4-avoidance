@@ -33,11 +33,8 @@ def plot_activation_distance(filename, msg, side=0):
     plt.show()
 
 
-def plot_eg_distances():
-    files = ['0-xvel-10-yvel-00-fov-120', 
-             '0-xvel-20-yvel-00-fov-120', 
-             '0-xvel-30-yvel-00-fov-120',
-             '0-xvel-40-yvel-00-fov-120']
+def plot_eg_distances(file):
+    files = [file[: file.find('xx')] + m + file[file.find('xx') + 2:] for m in ['10', '20', '30', '40']]
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharey=True)
     data_1 = get_data(files[0])
@@ -75,7 +72,7 @@ def plot_eg_distances():
     plt.tight_layout()
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    plt.savefig(path_save + 'dist-examples')
+    plt.savefig(path_save + file)
     plt.show()
 
 
@@ -150,7 +147,7 @@ if __name__ == '__main__':
         plot_activation_velocity(args.file, args.fov, args.msg)
 
     elif args.type in ['dist-eg', 'd-eg', 'eg-d', 'eg-dist']:
-        plot_eg_distances()
+        plot_eg_distances(args.file)
 
     elif args.type in ['vel-eg', 'v-eg', 'eg-v', 'eg-vel']:
-        plot_eg_velocities()
+        plot_eg_velocities(args.file)

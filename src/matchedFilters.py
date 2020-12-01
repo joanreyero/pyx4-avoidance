@@ -138,7 +138,7 @@ class MatchedFilter():
         sin_theta = np.repeat(sin_theta[:, :, np.newaxis], 2, axis=2)
         mag_temp = np.linalg.norm(self.D, axis=2)
         D = self.D / np.expand_dims(mag_temp, axis=2)
-        mf = -np.cross(np.cross(D, self.axis), D)[:, :, 1:] #/ sin_theta
+        mf = -np.cross(np.cross(D, self.axis), D)[:, :, 1:] / sin_theta
         return mf
 
     def plot(self, show=False):
@@ -167,7 +167,7 @@ class MatchedFilter():
 
         U = self.matched_filter[:, :, 0]
         V = self.matched_filter[:, :, 1]
-        step_size = 20
+        step_size = 5
         scale = None
         axis.set_xlabel('x (degrees)')
         axis.set_ylabel('y (degrees)')
@@ -224,14 +224,14 @@ class MatchedFilter():
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Create matched filters')
-    parser.add_argument('--width', type=int, default=640,
+    parser.add_argument('--width', type=int, default=240,
                         help="""Camera's width
                         Default: 640""")
-    parser.add_argument('--height', type=int, default=360,
+    parser.add_argument('--height', type=int, default=135,
                         help="""Camera's height
                         Default: 300""")
     parser.add_argument('-f','--fov', nargs='+',
-                        default=[180, 90],
+                        default=[120, 82],
                         help="""The x and y fov or intrinsic matrix,
                         either flattened or as a matrix.
                         Default: fovx: 90, 45""")
