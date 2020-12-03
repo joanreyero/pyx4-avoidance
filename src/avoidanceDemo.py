@@ -44,6 +44,11 @@ class AvoidanceController(Pyx4_base):
 
         self.vel = vel
 
+    @property
+    def gradients(self):
+        return {
+            C0: np.gradient(np.array(self.activations[C0]))
+        }
         
     @staticmethod
     def get_flight_instructions(args):
@@ -72,7 +77,6 @@ class AvoidanceController(Pyx4_base):
             self.stop_decision(data.activation, cam)
 
     def stop_decision(self, activation, cam):
-        rospy.loginfo(activation)
         self.activations[cam].append(activation)
         self.valid[cam].append(self.is_valid(self.activations[cam]))
         if sum(self.valid[cam]) == 3:

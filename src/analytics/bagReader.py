@@ -187,6 +187,7 @@ class AvoidanceBagReader(object):
             activation_col = [get_activation(flow, self.matched_filters[i]) for flow in df_c[FLOW]]
 
             df_c[ACTIVATION] = activation_col
+            df_c[ACTIVATION_GRAD] = np.gradient(df_c[ACTIVATION])
             # Save
             self.save(save_name, df_c, fov)
 
@@ -254,7 +255,8 @@ class AvoidanceBagReader(object):
 
 
         df = df.dropna(subset=[FLOW])  # Drop empty (np.NaN)
-
+        df[ACTIVATION_GRAD] = np.gradient(df[ACTIVATION])
+        
         if make_fovs:
             self.make_fovs(df, save_name)
             

@@ -76,6 +76,50 @@ def plot_eg_distances(file):
     plt.show()
 
 
+def plot_eg_grads(file):
+    files = [file[: file.find('xx')] + m + file[file.find('xx') + 2:] for m in ['10', '20', '30', '40']]
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharey=True)
+    data_1 = get_data(files[0])
+    data_2 = get_data(files[1])
+    data_3 = get_data(files[2])
+    data_4 = get_data(files[3])
+
+    ax1.plot(-data_1[POSITION], data_1[ACTIVATION_GRAD], linestyle='', marker='o', markersize=2.5)
+    ax1.set_xlabel('Distance (m)')
+    ax1.set_ylabel('Activation')
+    ax1.set_title('v = 1 m/s')
+
+    ax2.plot(-data_2[POSITION], data_2[ACTIVATION_GRAD], linestyle='', marker='o', markersize=2.5)
+    ax2.set_xlabel('Distance (m)')
+    ax2.set_ylabel('Activation')
+    ax2.set_title('v = 2 m/s')
+
+    ax3.plot(-data_3[POSITION], data_3[ACTIVATION_GRAD], linestyle='', marker='o', markersize=2.5)
+    ax3.set_xlabel('Distance (m)')
+    ax3.set_ylabel('Activation')
+    ax3.set_title('v = 3 m/s')
+
+    ax4.plot(-data_4[POSITION], data_4[ACTIVATION_GRAD], linestyle='', marker='o', markersize=2.5)
+    ax4.set_xlabel('Distance (m)')
+    ax4.set_ylabel('Activation')
+    ax4.set_title('v = 4 m/s')
+
+    # ax1.set_ylim([0, 2.5])
+    # ax2.set_ylim([0, 2.5])
+    # ax3.set_ylim([0, 2.5])
+    # ax4.set_ylim([0, 2.5])
+
+
+    fig.suptitle('Activation over distance for different velocities')
+    plt.tight_layout()
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    plt.savefig(path_save + file)
+    plt.show()
+
+
+
 def plot_eg_velocities():
     file = '0-velocity--dist-2'
     data = get_data(file)
@@ -147,6 +191,9 @@ if __name__ == '__main__':
         plot_activation_velocity(args.file, args.fov, args.msg)
 
     elif args.type in ['dist-eg', 'd-eg', 'eg-d', 'eg-dist']:
+        plot_eg_distances(args.file)
+
+    elif args.type in ['grad-eg', 'g-eg', 'eg-g', 'eg-grad']:
         plot_eg_distances(args.file)
 
     elif args.type in ['vel-eg', 'v-eg', 'eg-v', 'eg-vel']:
