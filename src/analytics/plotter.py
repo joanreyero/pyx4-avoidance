@@ -194,7 +194,7 @@ if __name__ == '__main__':
         plot_eg_distances(args.file)
 
     elif args.type in ['grad-eg', 'g-eg', 'eg-g', 'eg-grad']:
-        plot_eg_distances(args.file)
+        plot_eg_grads(args.file)
 
     elif args.type in ['vel-eg', 'v-eg', 'eg-v', 'eg-vel']:
         plot_eg_velocities(args.file)
