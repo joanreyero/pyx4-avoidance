@@ -4,7 +4,7 @@ import numpy as np
 
 class ActivationDecisionMaker(object):
     
-    def __init__(self, vel, min_init=20, min_decision=6, threshold_constant=1, report=False):
+    def __init__(self, vel, min_init=10, min_decision=5, threshold_constant=0.4, report=False):
         """Initialise decision maker
 
         Args:
@@ -50,6 +50,11 @@ class ActivationDecisionMaker(object):
         # Minumum number of decisions True to say obstacle
         self.min_decision = min_decision
         self.threshold_constant = threshold_constant
+        self.started = False
+        self.vel = vel
+
+    def start(self):
+        self.started = True
         
     def check_init(self):
         """Check whether we can initialise
@@ -125,6 +130,11 @@ class ActivationDecisionMaker(object):
             bool: stopping decision
         """
         self.decisions.append(filt_act >= threshold)
+        # print('\n')
+        # print(filt_act)
+        # print(threshold)
+        # print(self.decisions)
+        # print('\n')
         if sum(self.decisions) == self.min_decision:
             return True
         return False
@@ -140,7 +150,7 @@ class ActivationDecisionMaker(object):
         Returns:
             bool: decision
         """
-        if self._init:
+        if self._init and self.started:
             # Check for outlier
             if not self.is_outlier(activation):
                 # If it is not, update stats and threshold
@@ -162,7 +172,9 @@ class ActivationDecisionMaker(object):
                     
                 return decision
                 
-        else:
+        elif self.started:
+            print('\n')
+            print(self.vel)
             self.n += 1
             # Check whether we can initialise
             self.check_init()

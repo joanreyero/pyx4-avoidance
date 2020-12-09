@@ -12,7 +12,7 @@
     <arg name="height_adjust_random_seed" default="2020" />
     <arg name="height_adjust_amplitude" default="1.0" />
     <arg name="height_adjust_points" default="10" />
-    <arg name="vel" value="2.0"/>
+    <arg name="vel" default="2.0"/>
 
 
     MAVROS NODE
@@ -80,7 +80,10 @@
           --velocity $(arg vel)
           "/>   
 
-    <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="log"/>
+    <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="screen"
+            args="
+            --velocity $(arg vel)
+          "/>
  
 
 </launch>

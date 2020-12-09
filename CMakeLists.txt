@@ -55,7 +55,7 @@ add_message_files(
   FILES
   flow.msg
   activation.msg
-  decision.msg
+  avoidancedecision.msg
 )
 
 ## Generate services in the 'srv' folder

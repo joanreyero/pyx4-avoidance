@@ -11,7 +11,8 @@ from opticFlow import OpticFlow
 from activation import get_activation
 from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
-from pyx4_avoidance.msg import decision as DecisionMsg
+from pyx4.msg import pyx4_state
+from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -83,7 +84,7 @@ class OpticFlowROS():
       self.vel = np.zeros(3)
       self.target_vel = target_vel
 
-      self.decision_maker = False
+      self.decision_maker = DecisionMaker(self.target_vel)
             
       self.subscribers(wait_for_imtopic_s)
       self.publishers()
@@ -165,6 +166,9 @@ class OpticFlowROS():
       self.vel_subs = rospy.Subscriber(
          '/mavros/local_position/velocity_local', TwistStamped, self.vel_subs_cb
       )
+
+      self.pyx4_state_subs = rospy.Subscriber('/pyx4_node/pyx4_state', 
+                                                pyx4_state, self.state_cb)
       
       try:
          rospy.loginfo('waiting for camera topics to be published')
@@ -222,6 +226,11 @@ class OpticFlowROS():
       """
       if not self.cam:
          self.cam = Camera(data)
+
+   def state_cb(self, data):
+      rospy.loginfo(data)
+      if data.flight_state == 'Teleoperation':
+         self.decision_maker.start()
    
    def camera_general_cb(self, cam, data):
       """Callback for the camera topic. Add the image to an image queue.
@@ -249,8 +258,6 @@ class OpticFlowROS():
    def vel_subs_cb(self, data):
       v = data.twist.linear
       self.vel = np.array([v.x, v.y, v.z])
-      if np.linalg.norm(np.array(self.vel[:2])) > 0.3:
-         self._init_decision_maker()
 
    def data_collection_cb(self, data):
       data = data.pose.position
@@ -283,9 +290,6 @@ class OpticFlowROS():
          cam.w, cam.h, 
          (cam.fovx_deg, cam.fovy_deg), orientation=orientation
       ).matched_filter
-
-   def _init_decision_maker(self):
-      self.decision_maker = DecisionMaker(self.target_vel)
        
    def main(self):
       while not rospy.is_shutdown():
@@ -306,9 +310,10 @@ class OpticFlowROS():
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
-                  if self.decision_maker:
-                     decision = self.decision_maker.step(activation)
-                     self.publish_decision(decision)
+                  if self.decision_maker.started:
+                     if self.decision_maker.step(activation):
+                        rospy.loginfo('STOPPPPPPPPPPP')
+                        self.publish_decision('stop')
 
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))
@@ -319,8 +324,16 @@ class OpticFlowROS():
 
       
 if __name__ == '__main__':
-  rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
-  OF = OpticFlowROS(NODE_NAME, data_collection=False)
-  OF.main()
+   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
+   
+   import argparse
+   parser = argparse.ArgumentParser(description="")
+   # Stuff that goes in teleop
+   parser.add_argument('--data_collection', '-d', type=bool, default=False)    
+   parser.add_argument('--velocity', '-v', type=float, default=2.0)    
+   args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
+  
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False)
+   OF.main()
       
         
