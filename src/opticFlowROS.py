@@ -9,7 +9,9 @@ from geometry_msgs.msg import PoseStamped
 from pyx4_avoidance.msg import flow as FlowMsg
 from opticFlow import OpticFlow
 from activation import get_activation
+from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
+from pyx4_avoidance.msg import decision as DecisionMsg
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -31,6 +33,7 @@ NODE_NAME = 'pyx4_avoidance_node'
 class OpticFlowROS():
    
    def __init__(self, node_name,
+                target_vel = 2,
                 cam_0_topic='/resize_img/image', 
                 cam_45_topic='/resize_img_45/image', 
                 cam_n45_topic='/resize_img_n45/image', 
@@ -78,7 +81,10 @@ class OpticFlowROS():
       }
 
       self.vel = np.zeros(3)
-      
+      self.target_vel = target_vel
+
+      self.decision_maker = False
+            
       self.subscribers(wait_for_imtopic_s)
       self.publishers()
       
@@ -131,6 +137,9 @@ class OpticFlowROS():
          C45: ActivationMsg(),
          CN45: ActivationMsg()
       }
+
+      self.decision_publisher = rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10)
+      self.decision_msg = DecisionMsg()
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -240,6 +249,8 @@ class OpticFlowROS():
    def vel_subs_cb(self, data):
       v = data.twist.linear
       self.vel = np.array([v.x, v.y, v.z])
+      if np.linalg.norm(np.array(self.vel[:2])) > 0.3:
+         self._init_decision_maker()
 
    def data_collection_cb(self, data):
       data = data.pose.position
@@ -261,11 +272,20 @@ class OpticFlowROS():
          self.activation_msgs[cam].activation = activation
          self.activation_publishers[cam].publish(self.activation_msgs[cam])
 
+   def publish_decision(self, d):
+      self.decision_msg.decision = d
+      self.decision_msg.header.stamp = rospy.Time.now()
+      self.decision_publisher.publish(self.decision_msg)
+
+
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
          (cam.fovx_deg, cam.fovy_deg), orientation=orientation
       ).matched_filter
+
+   def _init_decision_maker(self):
+      self.decision_maker = DecisionMaker(self.target_vel)
        
    def main(self):
       while not rospy.is_shutdown():
@@ -286,6 +306,10 @@ class OpticFlowROS():
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
+                  if self.decision_maker:
+                     decision = self.decision_maker.step(activation)
+                     self.publish_decision(decision)
+
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))
                      rospy.loginfo('Distance: ' + str(self.current_distance))
@@ -293,17 +317,10 @@ class OpticFlowROS():
             if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
 
-            
-
-      
-            
-
-            
-               
       
 if __name__ == '__main__':
   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
-  OF = OpticFlowROS(NODE_NAME, data_collection=True)
+  OF = OpticFlowROS(NODE_NAME, data_collection=False)
   OF.main()
       
         
