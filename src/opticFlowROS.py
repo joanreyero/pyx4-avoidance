@@ -102,8 +102,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 45.0]),
-         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, -45.0]),
+         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
+         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
       }
 
       self.data_collection = data_collection
@@ -300,10 +300,10 @@ class OpticFlowROS():
       self.decision_publishers[cam].publish(self.decision_msgs[cam])
 
 
-   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0]):
+   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
-         (cam.fovx_deg, cam.fovy_deg), orientation=orientation
+         (cam.fovx_deg, cam.fovy_deg), orientation=orientation, axis=axis
       ).matched_filter
        
    def main(self):
