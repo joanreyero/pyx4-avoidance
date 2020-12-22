@@ -4,7 +4,7 @@ import numpy as np
 
 class ActivationDecisionMaker(object):
     
-    def __init__(self, vel, min_init=10, min_decision=5, threshold_constant=0.4, report=False):
+    def __init__(self, vel, min_init=15, min_decision=7, threshold_constant=2.5, report=False):
         """Initialise decision maker
 
         Args:
@@ -173,8 +173,6 @@ class ActivationDecisionMaker(object):
                 return decision
                 
         elif self.started:
-            print('\n')
-            print(self.vel)
             self.n += 1
             # Check whether we can initialise
             self.check_init()

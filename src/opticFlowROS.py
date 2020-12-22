@@ -84,7 +84,11 @@ class OpticFlowROS():
       self.vel = np.zeros(3)
       self.target_vel = target_vel
 
-      self.decision_maker = DecisionMaker(self.target_vel)
+      self.decision_makers = {
+         C0: DecisionMaker(self.target_vel),
+         C45: DecisionMaker(self.target_vel),
+         CN45: DecisionMaker(self.target_vel)
+      }
             
       self.subscribers(wait_for_imtopic_s)
       self.publishers()
@@ -333,7 +337,7 @@ if __name__ == '__main__':
    parser.add_argument('--velocity', '-v', type=float, default=2.0)    
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False)
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=True)
    OF.main()
       
         
