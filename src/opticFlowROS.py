@@ -9,7 +9,10 @@ from geometry_msgs.msg import PoseStamped
 from pyx4_avoidance.msg import flow as FlowMsg
 from opticFlow import OpticFlow
 from activation import get_activation
+from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
+from pyx4.msg import pyx4_state
+from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -31,6 +34,7 @@ NODE_NAME = 'pyx4_avoidance_node'
 class OpticFlowROS():
    
    def __init__(self, node_name,
+                target_vel = 2,
                 cam_0_topic='/resize_img/image', 
                 cam_45_topic='/resize_img_45/image', 
                 cam_n45_topic='/resize_img_n45/image', 
@@ -78,7 +82,14 @@ class OpticFlowROS():
       }
 
       self.vel = np.zeros(3)
-      
+      self.target_vel = target_vel
+
+      self.decision_makers = {
+         C0: DecisionMaker(self.target_vel),
+         C45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5),
+         CN45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5)
+      }
+            
       self.subscribers(wait_for_imtopic_s)
       self.publishers()
       
@@ -91,8 +102,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, 45.0]),
-         CN45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, -45.0]),
+         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
+         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
       }
 
       self.data_collection = data_collection
@@ -131,6 +142,18 @@ class OpticFlowROS():
          C45: ActivationMsg(),
          CN45: ActivationMsg()
       }
+
+      self.decision_publishers = {
+         C0: rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10),
+         C45: rospy.Publisher(self.node_name + '/decision_c45', DecisionMsg, queue_size=10),
+         CN45: rospy.Publisher(self.node_name + '/decision_cn45', DecisionMsg, queue_size=10)
+      }
+      
+      self.decision_msgs = {
+         C0: DecisionMsg(),
+         C45: DecisionMsg(),
+         CN45: DecisionMsg()
+      }
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -156,6 +179,9 @@ class OpticFlowROS():
       self.vel_subs = rospy.Subscriber(
          '/mavros/local_position/velocity_local', TwistStamped, self.vel_subs_cb
       )
+
+      self.pyx4_state_subs = rospy.Subscriber('/pyx4_node/pyx4_state', 
+                                                pyx4_state, self.state_cb)
       
       try:
          rospy.loginfo('waiting for camera topics to be published')
@@ -213,6 +239,13 @@ class OpticFlowROS():
       """
       if not self.cam:
          self.cam = Camera(data)
+
+   def state_cb(self, data):
+      rospy.loginfo(data)
+      if data.flight_state in ('Teleoperation', 'Waypoint'):
+         self.decision_makers[C0].start()
+         self.decision_makers[C45].start()
+         self.decision_makers[CN45].start()
    
    def camera_general_cb(self, cam, data):
       """Callback for the camera topic. Add the image to an image queue.
@@ -261,10 +294,16 @@ class OpticFlowROS():
          self.activation_msgs[cam].activation = activation
          self.activation_publishers[cam].publish(self.activation_msgs[cam])
 
-   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0]):
+   def publish_decision(self, d, cam):
+      self.decision_msgs[cam].decision = d
+      self.decision_msgs[cam].header.stamp = rospy.Time.now()
+      self.decision_publishers[cam].publish(self.decision_msgs[cam])
+
+
+   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
-         (cam.fovx_deg, cam.fovy_deg), orientation=orientation
+         (cam.fovx_deg, cam.fovy_deg), orientation=orientation, axis=axis
       ).matched_filter
        
    def main(self):
@@ -286,24 +325,32 @@ class OpticFlowROS():
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
-                  if self.data_collection and cam == C0:
-                     rospy.loginfo('Activation: ' + str(activation))
-                     rospy.loginfo('Distance: ' + str(self.current_distance))
+                  if self.decision_makers[cam].started:
+                     if self.decision_makers[cam].step(activation):
+                        rospy.loginfo('\n\n' + cam + ': STOP\n\n')
+                        self.publish_decision('stop', cam)
+                     else:
+                        self.publish_decision('go', cam)
+
+                  #if self.data_collection and cam == C0:
+                     #rospy.loginfo('Activation: ' + str(activation))
+                     #rospy.loginfo('Distance: ' + str(self.current_distance))
 
             if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
 
-            
-
-      
-            
-
-            
-               
       
 if __name__ == '__main__':
-  rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
-  OF = OpticFlowROS(NODE_NAME, data_collection=True)
-  OF.main()
+   rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
+   
+   import argparse
+   parser = argparse.ArgumentParser(description="")
+   # Stuff that goes in teleop
+   parser.add_argument('--data_collection', '-d', type=bool, default=False)    
+   parser.add_argument('--velocity', '-v', type=float, default=2.0)    
+   args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
+  
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=True)
+   OF.main()
       
         

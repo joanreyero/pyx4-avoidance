@@ -45,7 +45,7 @@ def get_general_data(marker):
     files = [f for f in listdir(path) if isfile(join(path, f)) 
              and f[:len(marker)] == marker 
              and f.find('general') == -1]
-    df = pd.DataFrame(columns=[VELOCITY, ACTIVATION, FOVX, POSITION])
+    df = pd.DataFrame(columns=[VELOCITY, ACTIVATION, FOVX, POSITION, ACTIVATION_GRAD])
     for file in files:
         print(file)
         if not is_vel(file):

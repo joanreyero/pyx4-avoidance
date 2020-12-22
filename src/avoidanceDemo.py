@@ -7,6 +7,7 @@ from camera_labels import *
 from geometry_msgs.msg import Twist
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import activation as ActivationMsg
+from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from collections import deque
 import numpy as np
 
@@ -25,6 +26,12 @@ class AvoidanceController(Pyx4_base):
             '/pyx4_avoidance_node/activation', 
             ActivationMsg, self.cam_0_activation_cb
         )
+        
+        self.activation_subs = rospy.Subscriber(
+            '/pyx4_avoidance_node/decision', 
+            DecisionMsg, self.decision_cb
+        )
+        
         self.vel_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.vel_msg = Twist()
 
@@ -44,6 +51,11 @@ class AvoidanceController(Pyx4_base):
 
         self.vel = vel
 
+    @property
+    def gradients(self):
+        return {
+            C0: np.gradient(np.array(self.activations[C0]))
+        }
         
     @staticmethod
     def get_flight_instructions(args):
@@ -53,13 +65,17 @@ class AvoidanceController(Pyx4_base):
         rospy.loginfo(data)
         if data.flight_state == 'Teleoperation':
             self.vel_msg.linear.y = self.vel
+            self.vel_msg.linear.x = 0
             self.vel_publisher.publish(self.vel_msg)
             self.active = True
 
+    def decision_cb(self, data):
+        if data.decision == 'stop':
+            self.vel_publisher.publish(self.stop_msg)
+            
     def is_valid(self, activations):
         if activations[-1] * 0 > 0.4:
             activations = map(lambda x: round(x, 1), activations)
-            print(activations)
             return (sorted(activations) == list(activations))
         return False
 
@@ -72,13 +88,12 @@ class AvoidanceController(Pyx4_base):
             self.stop_decision(data.activation, cam)
 
     def stop_decision(self, activation, cam):
-        rospy.loginfo(activation)
         self.activations[cam].append(activation)
         self.valid[cam].append(self.is_valid(self.activations[cam]))
-        if sum(self.valid[cam]) == 3:
-            print(self.activations[cam])
-            rospy.loginfo('STOP')
-            self.vel_publisher.publish(self.stop_msg)
+        #if sum(self.valid[cam]) == 3:
+            #print(self.activations[cam])
+            #rospy.loginfo('STOP')
+            #self.vel_publisher.publish(self.stop_msg)
             
 
 if __name__ == '__main__':
