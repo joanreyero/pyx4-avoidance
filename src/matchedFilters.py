@@ -138,7 +138,7 @@ class MatchedFilter():
         sin_theta = np.repeat(sin_theta[:, :, np.newaxis], 2, axis=2)
         mag_temp = np.linalg.norm(self.D, axis=2)
         D = self.D / np.expand_dims(mag_temp, axis=2)
-        mf = -np.cross(np.cross(D, self.axis), D)[:, :, 1:] / sin_theta
+        mf = -np.cross(np.cross(D, self.axis), D)[:, :, 1:] #/ sin_theta
         return mf
 
     def plot(self, show=False):

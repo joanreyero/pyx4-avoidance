@@ -102,8 +102,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, 45.0]),
-         CN45: self.get_matched_filter(self.cam, orientation=[0.0, 0.0, -45.0]),
+         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 45.0]),
+         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, -45.0]),
       }
 
       self.data_collection = data_collection
