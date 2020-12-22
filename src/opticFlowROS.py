@@ -86,8 +86,8 @@ class OpticFlowROS():
 
       self.decision_makers = {
          C0: DecisionMaker(self.target_vel),
-         C45: DecisionMaker(self.target_vel),
-         CN45: DecisionMaker(self.target_vel)
+         C45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5),
+         CN45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5)
       }
             
       self.subscribers(wait_for_imtopic_s)
@@ -143,8 +143,17 @@ class OpticFlowROS():
          CN45: ActivationMsg()
       }
 
-      self.decision_publisher = rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10)
-      self.decision_msg = DecisionMsg()
+      self.decision_publishers = {
+         C0: rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10),
+         C45: rospy.Publisher(self.node_name + '/decision_c45', DecisionMsg, queue_size=10),
+         CN45: rospy.Publisher(self.node_name + '/decision_cn45', DecisionMsg, queue_size=10)
+      }
+      
+      self.decision_msgs = {
+         C0: DecisionMsg(),
+         C45: DecisionMsg(),
+         CN45: DecisionMsg()
+      }
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -233,8 +242,10 @@ class OpticFlowROS():
 
    def state_cb(self, data):
       rospy.loginfo(data)
-      if data.flight_state == 'Teleoperation':
-         self.decision_maker.start()
+      if data.flight_state in ('Teleoperation', 'Waypoint'):
+         self.decision_makers[C0].start()
+         self.decision_makers[C45].start()
+         self.decision_makers[CN45].start()
    
    def camera_general_cb(self, cam, data):
       """Callback for the camera topic. Add the image to an image queue.
@@ -283,10 +294,10 @@ class OpticFlowROS():
          self.activation_msgs[cam].activation = activation
          self.activation_publishers[cam].publish(self.activation_msgs[cam])
 
-   def publish_decision(self, d):
-      self.decision_msg.decision = d
-      self.decision_msg.header.stamp = rospy.Time.now()
-      self.decision_publisher.publish(self.decision_msg)
+   def publish_decision(self, d, cam):
+      self.decision_msgs[cam].decision = d
+      self.decision_msgs[cam].header.stamp = rospy.Time.now()
+      self.decision_publishers[cam].publish(self.decision_msgs[cam])
 
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0]):
@@ -314,14 +325,16 @@ class OpticFlowROS():
                   activation = get_activation(flow, self.matched_filters[cam])
                   self.publish_activation(activation, cam)
 
-                  if self.decision_maker.started:
-                     if self.decision_maker.step(activation):
-                        rospy.loginfo('STOPPPPPPPPPPP')
-                        self.publish_decision('stop')
+                  if self.decision_makers[cam].started:
+                     if self.decision_makers[cam].step(activation):
+                        rospy.loginfo('\n\n' + cam + ': STOP\n\n')
+                        self.publish_decision('stop', cam)
+                     else:
+                        self.publish_decision('go', cam)
 
-                  if self.data_collection and cam == C0:
-                     rospy.loginfo('Activation: ' + str(activation))
-                     rospy.loginfo('Distance: ' + str(self.current_distance))
+                  #if self.data_collection and cam == C0:
+                     #rospy.loginfo('Activation: ' + str(activation))
+                     #rospy.loginfo('Distance: ' + str(self.current_distance))
 
             if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
