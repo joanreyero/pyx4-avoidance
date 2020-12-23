@@ -277,7 +277,7 @@ class AvoidanceBagReader(object):
                 self.check_init(msg)
 
 
-        df = df.dropna(subset=[FLOW])  # Drop empty (np.NaN)
+        #df = df.dropna(subset=[FLOW])  # Drop empty (np.NaN)
         df[ACTIVATION_GRAD] = np.gradient(df[ACTIVATION])
         
         if make_fovs:
