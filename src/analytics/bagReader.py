@@ -104,6 +104,21 @@ class AvoidanceBagReader(object):
         elif label == ACTIVATION:
             return self.get_activation_msg(msg)
 
+        elif label == ACTIVATION_45:
+            return self.get_activation_msg(msg)
+
+        elif label == ACTIVATION_N45:
+            return self.get_activation_msg(msg)
+
+        elif label == DECISION:
+            return self.get_decision_msg(msg)
+
+        elif label == DECISION_45:
+            return self.get_decision_msg(msg)
+
+        elif label == DECISION_N45:
+            return self.get_decision_msg(msg)
+
     def get_position_msg(self, data):
         """Get the relevant part of a position message
 
@@ -144,6 +159,14 @@ class AvoidanceBagReader(object):
             data (Activation.msg): float with the activation.
         """
         return float(data.activation)
+
+    def get_decision_msg(self, data):
+        """Get the activation info from an activation message
+
+        Args:
+            data (Activation.msg): float with the activation.
+        """
+        return float(data.decision)
 
     def parse_time(self, t):
         """Convert time in from rospy.Time to int with

@@ -10,6 +10,9 @@ ACTIVATION_GRAD = 'activation_gradient'
 ACTIVATION_45 = 'activation_c45'
 ACTIVATION_N45 = 'activation_cn45'
 FOVX = 'fov_x'
+DECISION = 'decision'
+DECISION_45 = 'decision_c45'
+DECISION_N45 = 'decision_cn45'
 
 POSITION_TOPIC = '/mavros/local_position/pose'
 VELOCITY_TOPIC = '/mavros/local_position/velocity_local'
@@ -20,6 +23,10 @@ FLOW_45_TOPIC =  '/pyx4_avoidance_node/optic_flow_c45'
 ACTIVATION_45_TOPIC =  '/pyx4_avoidance_node/activation_c45'
 FLOW_N45_TOPIC =  '/pyx4_avoidance_node/optic_flow_cn45'
 ACTIVATION_N45_TOPIC =  '/pyx4_avoidance_node/activation_cn45'
+DECISION_TOPIC = '/pyx4_avoidance/decision'
+DECISION_45_TOPIC = '/pyx4_avoidance/decision_c45'
+DECISION_N45_TOPIC = '/pyx4_avoidance/decision_cn45'
+
 
 
 TOPICS_TO_LABELS = {
@@ -31,7 +38,10 @@ TOPICS_TO_LABELS = {
     FLOW_45_TOPIC: FLOW_45,
     ACTIVATION_45_TOPIC: ACTIVATION_45,
     FLOW_N45_TOPIC: FLOW_N45,
-    ACTIVATION_N45_TOPIC: ACTIVATION_N45
+    ACTIVATION_N45_TOPIC: ACTIVATION_N45,
+    DECISION_TOPIC: DECISION,
+    DECISION_45_TOPIC: DECISION_45,
+    DECISION_N45_TOPIC: DECISION_N45,
 }
 
 TOPICS = [k for k, v in TOPICS_TO_LABELS.iteritems()]

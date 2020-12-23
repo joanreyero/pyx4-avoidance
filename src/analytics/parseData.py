@@ -89,7 +89,7 @@ def parse_bags(marker, distance):
                 and f[:len(marker)] == marker]
 
     for file in bagfiles:
-        reader = AvoidanceBagReader(file[:-4], make_fovs=True, distance=distance)
+        reader = AvoidanceBagReader(file[:-4], make_fovs=False, distance=distance)
 
 
 def main(marker, distance=2, parse_bagsP=False, original_dist=30.13):
@@ -115,10 +115,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse the data')
     parser.add_argument('--marker', '-m', default='0', type=str,
                         help='set of data to parse')
-    parser.add_argument('--parse-bags', '-b', default=False, type=bool)
-    parser.add_argument('--distance', '-d', default=2.0, type=float)
+    parser.add_argument('--parse-bags', '-b', default=True, type=bool)
+    parser.add_argument('--distance', '-d', default=0.5, type=float)
     parser.add_argument('--original_distance', '-o', default=30.13, type=float)
     args = parser.parse_args()
 
-    main(args.marker, parse_bagsP=args.parse_bags, original_dist = args.original_distance)
+    main(args.marker, parse_bagsP=args.parse_bags, original_dist=args.original_distance)
     #get_general_data('0')
