@@ -1,2 +1,2 @@
 Header header
-string decision
+int32 decision

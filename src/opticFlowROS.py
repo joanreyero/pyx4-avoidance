@@ -13,7 +13,7 @@ from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
-from pyx4_avoidance.msg import mainavoidancedecision as FinalDecisionMsg
+from pyx4_avoidance.msg import avoidancedirection as AvoidanceDirectionMsg
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -145,7 +145,7 @@ class OpticFlowROS():
       }
 
       self.decision_publishers = {
-         C0: rospy.Publisher(self.node_name + '/decision_c0', DecisionMsg, queue_size=10),
+         C0: rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10),
          C45: rospy.Publisher(self.node_name + '/decision_c45', DecisionMsg, queue_size=10),
          CN45: rospy.Publisher(self.node_name + '/decision_cn45', DecisionMsg, queue_size=10)
       }
@@ -157,11 +157,11 @@ class OpticFlowROS():
          CN45: DecisionMsg()
       }
 
-      self.final_decision_publisher = rospy.Publisher(
-         self.node_name + '/decision', FinalDecisionMsg, queue_size=10
+      self.avoidance_direction_publisher = rospy.Publisher(
+         self.node_name + '/direction', AvoidanceDirectionMsg, queue_size=10
       )
 
-      self.final_decision_msg = FinalDecisionMsg()  # Left, Right or Back
+      self.avoidance_direction_msg = AvoidanceDirectionMsg()  # Left, Right or Back
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -314,16 +314,16 @@ class OpticFlowROS():
       self.decision_publishers[cam].publish(self.decision_msgs[cam])
 
 
-   def publish_final_decision(self, d):
+   def publish_avoidance_direction(self, d):
       """Publish the main decision message, which will make
       the drone go back, go left or go right
 
       Args:
           d (str): left, back, or right
       """
-      self.final_decision_msg = d
-      self.final_decision_msg.stamp = rospy.Time.now()
-      self.final_decision_publisher.publish(self.final_decision_msg)
+      self.avoidance_direction_msg = d
+      self.avoidance_direction_msg.stamp = rospy.Time.now()
+      self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
       
 
 
