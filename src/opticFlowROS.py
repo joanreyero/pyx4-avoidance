@@ -13,6 +13,7 @@ from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
+from pyx4_avoidance.msg import mainavoidancedecision as FinalDecisionMsg
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -144,16 +145,23 @@ class OpticFlowROS():
       }
 
       self.decision_publishers = {
-         C0: rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10),
+         C0: rospy.Publisher(self.node_name + '/decision_c0', DecisionMsg, queue_size=10),
          C45: rospy.Publisher(self.node_name + '/decision_c45', DecisionMsg, queue_size=10),
          CN45: rospy.Publisher(self.node_name + '/decision_cn45', DecisionMsg, queue_size=10)
       }
-      
+
+      # Int messages: 0 -> stop or obstacle; 1 -> go or clear
       self.decision_msgs = {
          C0: DecisionMsg(),
          C45: DecisionMsg(),
          CN45: DecisionMsg()
       }
+
+      self.final_decision_publisher = rospy.Publisher(
+         self.node_name + '/decision', FinalDecisionMsg, queue_size=10
+      )
+
+      self.final_decision_msg = FinalDecisionMsg()  # Left, Right or Back
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -295,9 +303,28 @@ class OpticFlowROS():
          self.activation_publishers[cam].publish(self.activation_msgs[cam])
 
    def publish_decision(self, d, cam):
+      """Publish a camera decision
+
+      Args:
+          d (int): 0 -> stop or obstacle; 1 -> go or clear
+          cam (str): C0, C45 or CN45
+      """
       self.decision_msgs[cam].decision = d
       self.decision_msgs[cam].header.stamp = rospy.Time.now()
       self.decision_publishers[cam].publish(self.decision_msgs[cam])
+
+
+   def publish_final_decision(self, d):
+      """Publish the main decision message, which will make
+      the drone go back, go left or go right
+
+      Args:
+          d (str): left, back, or right
+      """
+      self.final_decision_msg = d
+      self.final_decision_msg.stamp = rospy.Time.now()
+      self.final_decision_publisher.publish(self.final_decision_msg)
+      
 
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
@@ -328,9 +355,9 @@ class OpticFlowROS():
                   if self.decision_makers[cam].started:
                      if self.decision_makers[cam].step(activation):
                         rospy.loginfo('\n\n' + cam + ': STOP\n\n')
-                        self.publish_decision('stop', cam)
+                        self.publish_decision(1, cam)
                      else:
-                        self.publish_decision('go', cam)
+                        self.publish_decision(0, cam)
 
                   #if self.data_collection and cam == C0:
                      #rospy.loginfo('Activation: ' + str(activation))
