@@ -45,8 +45,8 @@ class AvoidanceBagReader(object):
         # The topic that marks state
         marker_topic = STATE_TOPIC
 
-        self.cam_fovx = 120
-        self.cam_fov_y = 89
+        self.cam_fovx = 45
+        self.cam_fov_y = 27
         self.cam_w = 240
         self.cam_h = 135
 
