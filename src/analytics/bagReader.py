@@ -166,7 +166,6 @@ class AvoidanceBagReader(object):
         Args:
             data (Activation.msg): float with the activation.
         """
-        print(data.decision)
         return float(data.decision)
 
     def parse_time(self, t):
@@ -248,8 +247,6 @@ class AvoidanceBagReader(object):
         current = templ.copy()
         # Iterate thorugh the bag
         for topic, msg, t in self.bag.read_messages(topics=topics):
-            if 'decision' in topic:
-                print(msg)
             # Convert to float with adequate precision
             t = self.parse_time(t)            
             
@@ -278,7 +275,10 @@ class AvoidanceBagReader(object):
                 self.check_init(msg)
 
 
-        #df = df.dropna(subset=[FLOW])  # Drop empty (np.NaN)
+        df = df.dropna(subset=[DECISION])  # Drop empty (np.NaN)
+        df = df.dropna(subset=[DECISION_45])  # Drop empty (np.NaN)
+        df = df.dropna(subset=[DECISION_N45])  # Drop empty (np.NaN)
+        df = df.dropna(subset=[ACTIVATION])  # Drop empty (np.NaN)
         df[ACTIVATION_GRAD] = np.gradient(df[ACTIVATION])
         
         if make_fovs:
