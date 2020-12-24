@@ -166,6 +166,7 @@ class AvoidanceBagReader(object):
         Args:
             data (Activation.msg): float with the activation.
         """
+        print(data.decision)
         return float(data.decision)
 
     def parse_time(self, t):
