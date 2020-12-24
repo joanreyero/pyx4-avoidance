@@ -275,11 +275,11 @@ class AvoidanceBagReader(object):
                 self.check_init(msg)
 
 
-        df = df.dropna(subset=[DECISION])  # Drop empty (np.NaN)
-        df = df.dropna(subset=[DECISION_45])  # Drop empty (np.NaN)
-        df = df.dropna(subset=[DECISION_N45])  # Drop empty (np.NaN)
-        df = df.dropna(subset=[ACTIVATION])  # Drop empty (np.NaN)
-        df[ACTIVATION_GRAD] = np.gradient(df[ACTIVATION])
+#        df = df.dropna(subset=[DECISION])  # Drop empty (np.NaN)
+#        df = df.dropna(subset=[DECISION_45])  # Drop empty (np.NaN)
+#        df = df.dropna(subset=[DECISION_N45])  # Drop empty (np.NaN)
+#        df = df.dropna(subset=[ACTIVATION])  # Drop empty (np.NaN)
+#        df[ACTIVATION_GRAD] = np.gradient(df[ACTIVATION])
         
         if make_fovs:
             self.make_fovs(df, save_name)
@@ -293,4 +293,4 @@ class AvoidanceBagReader(object):
 
 
 if __name__ == '__main__':
-    reader = AvoidanceBagReader('new', verbose=False, make_fovs=True)
+    reader = AvoidanceBagReader('new', verbose=False, make_fovs=False)
