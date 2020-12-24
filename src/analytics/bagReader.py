@@ -248,7 +248,8 @@ class AvoidanceBagReader(object):
         current = templ.copy()
         # Iterate thorugh the bag
         for topic, msg, t in self.bag.read_messages(topics=topics):
-
+            if 'decision' in topic:
+                print(msg)
             # Convert to float with adequate precision
             t = self.parse_time(t)            
             
@@ -260,7 +261,6 @@ class AvoidanceBagReader(object):
                     # the message is given my get_msg
                     current[labels.get_label(topic)] = self.get_msg(topic, 
                                                                     msg)
-
                 elif t > current_time:
                     # Add to the dataframe
                     df.loc[current_time] = current

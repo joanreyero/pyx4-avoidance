@@ -11,7 +11,6 @@
     <arg name="kinky_walk_noise_flag" default="false" />
     <arg name="optic_flow_type" default="matched_filter" />
     <arg name="kink_eccentricity" default="0.66" />
-
     <arg name="do_height_adjust_outbound" default="False" />
     <arg name="height_adjust_random_seed" default="2020" />
     <arg name="height_adjust_amplitude" default="1.0" />
@@ -95,8 +94,6 @@
           /pyx4_avoidance_node/optic_flow_cn45
           /pyx4_avoidance_node/activation_cn45
           /pyx4_avoidance_node/decision
-          /pyx4_avoidance_node/decision_c45
-          /pyx4_avoidance_node/decision_cn45
          " if="$(eval save != false)"/>                  
     
     Optic flow node

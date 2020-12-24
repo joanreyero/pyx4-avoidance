@@ -23,9 +23,9 @@ FLOW_45_TOPIC =  '/pyx4_avoidance_node/optic_flow_c45'
 ACTIVATION_45_TOPIC =  '/pyx4_avoidance_node/activation_c45'
 FLOW_N45_TOPIC =  '/pyx4_avoidance_node/optic_flow_cn45'
 ACTIVATION_N45_TOPIC =  '/pyx4_avoidance_node/activation_cn45'
-DECISION_TOPIC = '/pyx4_avoidance/decision'
-DECISION_45_TOPIC = '/pyx4_avoidance/decision_c45'
-DECISION_N45_TOPIC = '/pyx4_avoidance/decision_cn45'
+DECISION_TOPIC = '/pyx4_avoidance_node/decision'
+DECISION_45_TOPIC = '/pyx4_avoidance_node/decision_c45'
+DECISION_N45_TOPIC = '/pyx4_avoidance_node/decision_cn45'
 
 
 
