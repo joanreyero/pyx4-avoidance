@@ -8,6 +8,7 @@ from geometry_msgs.msg import Twist
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
+from pyx4_avoidance.msg import avoidancedirection as DirectionMsg
 from collections import deque
 import numpy as np
 
@@ -33,6 +34,7 @@ class AvoidanceController(Pyx4_base):
         )
         
         self.vel_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        self.direction_publisher = rospy.Publisher('/pyx4_avoidance_node/direction', DirectionMsg, queue_size=10)
         self.vel_msg = Twist()
 
         self.stop_msg = Twist()
@@ -64,9 +66,15 @@ class AvoidanceController(Pyx4_base):
     def state_cb(self, data):
         rospy.loginfo(data)
         if data.flight_state == 'Teleoperation':
+            rospy.sleep(0.1)
             self.vel_msg.linear.y = self.vel
             self.vel_msg.linear.x = 0
             self.vel_publisher.publish(self.vel_msg)
+            rospy.sleep(4)            
+            directionmsg = DirectionMsg()
+            directionmsg.header.stamp = rospy.Time.now()
+            directionmsg.direction = 'left'
+            self.direction_publisher.publish(directionmsg)
             self.active = True
 
     def decision_cb(self, data):
