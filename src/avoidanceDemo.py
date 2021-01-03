@@ -17,7 +17,7 @@ NODE_NAME = 'avoidance-demo'
 class AvoidanceController(Pyx4_base):
 
     def __init__(self, vel, args):
-        instructions = AvoidanceController.get_flight_instructions(args)
+        instructions=AvoidanceController.get_flight_instructions(args)
         super(AvoidanceController, self).__init__(instructions)
 
         self.pyx4_state_subs = rospy.Subscriber('/pyx4_node/pyx4_state', 
