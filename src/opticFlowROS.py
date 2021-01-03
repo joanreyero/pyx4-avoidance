@@ -2,6 +2,7 @@
 from __future__ import division
 import os
 import numpy as np
+from collections import deque
 from sensor_msgs.msg import CameraInfo, Image
 from matchedFilters import MatchedFilter
 from geometry_msgs.msg import TwistStamped
@@ -9,6 +10,7 @@ from geometry_msgs.msg import PoseStamped
 from pyx4_avoidance.msg import flow as FlowMsg
 from opticFlow import OpticFlow
 from activation import get_activation
+from avoidance_direction import get_direction
 from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
@@ -115,6 +117,11 @@ class OpticFlowROS():
          #self.distance = 30.13
          self.distance = 30.13 - 4.8
          self.current_distance = self.distance
+
+      self.side_decisions = {
+         C45: deque([], maxlen=10),
+         CN45: deque([], maxlen=10),
+      }
 
 
    def publishers(self):
@@ -314,15 +321,15 @@ class OpticFlowROS():
       self.decision_publishers[cam].publish(self.decision_msgs[cam])
 
 
-   def publish_avoidance_direction(self, d):
+   def publish_direction(self, d):
       """Publish the main decision message, which will make
       the drone go back, go left or go right
 
       Args:
           d (str): left, back, or right
       """
-      self.avoidance_direction_msg = d
-      self.avoidance_direction_msg.stamp = rospy.Time.now()
+      self.avoidance_direction_msg.direction = d
+      self.avoidance_direction_msg.header.stamp = rospy.Time.now()
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
       
 
@@ -353,15 +360,27 @@ class OpticFlowROS():
                   self.publish_activation(activation, cam)
 
                   if self.decision_makers[cam].started:
-                     if self.decision_makers[cam].step(activation):
-                        rospy.loginfo('\n\n' + cam + ': STOP\n\n')
-                        self.publish_decision(1, cam)
+                     decision = self.decision_makers[cam].step(activation)
+                     if decision:
+                        # TODO Do I need to publish this?
+                        self.publish_decision(decision, cam)
+                        
+                        if cam == C0:
+                           dir = get_direction(self.side_decisions[C45], 
+                                               self.side_decisions[CN45])
+                           self.publish_direction(dir)
+                           
                      else:
-                        self.publish_decision(0, cam)
+                        self.publish_decision(decision, cam)
 
-                  #if self.data_collection and cam == C0:
-                     #rospy.loginfo('Activation: ' + str(activation))
-                     #rospy.loginfo('Distance: ' + str(self.current_distance))
+                     if cam != C0:
+                        self.side_decisions[cam].append(decision)
+
+                     print(cam, activation)
+
+                  if self.data_collection and cam == C0:
+                     rospy.loginfo('Activation: ' + str(activation))
+                     rospy.loginfo('Distance: ' + str(self.current_distance))
 
             if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
@@ -377,7 +396,7 @@ if __name__ == '__main__':
    parser.add_argument('--velocity', '-v', type=float, default=2.0)    
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=True)
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False)
    OF.main()
       
         
