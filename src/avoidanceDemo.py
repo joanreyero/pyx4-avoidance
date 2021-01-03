@@ -70,11 +70,6 @@ class AvoidanceController(Pyx4_base):
             self.vel_msg.linear.y = self.vel
             self.vel_msg.linear.x = 0
             self.vel_publisher.publish(self.vel_msg)
-            rospy.sleep(4)            
-            directionmsg = DirectionMsg()
-            directionmsg.header.stamp = rospy.Time.now()
-            directionmsg.direction = 'left'
-            self.direction_publisher.publish(directionmsg)
             self.active = True
 
     def decision_cb(self, data):
