@@ -258,7 +258,11 @@ class AvoidanceBagReader(object):
                     # the message is given my get_msg
                     current[labels.get_label(topic)] = self.get_msg(topic, 
                                                                     msg)
+                    
                 elif t > current_time:
+                    if 'decision_c45' in topic:
+                        print(self.get_msg(topic, msg))
+                        print(labels.get_label(topic))
                     # Add to the dataframe
                     df.loc[current_time] = current
                     # Restart current
