@@ -70,8 +70,8 @@
         <param name="height" type="int" value="135" />
         <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
         <!-- remap input topics -->
-        <remap from="image" to="/cam_45/image_mono"/>
-        <remap from="camera_info" to="/cam_45/camera_info"/>
+        <remap from="image" to="/cam_n45/image_mono"/>
+        <remap from="camera_info" to="/cam_n45/camera_info"/>
         <!-- remap output topics -->
         <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
         <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
