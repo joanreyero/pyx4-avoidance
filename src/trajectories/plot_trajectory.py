@@ -12,8 +12,9 @@ def read_world(fname):
 def plot_trajectory(fname_world):
     obstacles = read_world(fname_world)
     fig = plt.figure()
-    for obstacle in obstacle:
-        fig.scatter(obstacle[X], obstacle[Y])
+    for obstacle in obstacles:
+        plt.scatter(obstacle[X], obstacle[Y])
+    plt.show()
 
 
 plot_trajectory('circuit-trees')
