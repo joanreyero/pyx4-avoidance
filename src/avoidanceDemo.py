@@ -105,7 +105,7 @@ if __name__ == '__main__':
     rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)
     parser = argparse.ArgumentParser(description="Teleoperation px4 quadcopter.")
     # Stuff that goes in teleop
-    parser.add_argument('--timeout', type=float, default=30)
+    parser.add_argument('--timeout', type=float, default=45)
     parser.add_argument('--linear', type=float, default=4)
     parser.add_argument('--angular', type=float, default=2)
     parser.add_argument('--z_min', type=float, default=0)

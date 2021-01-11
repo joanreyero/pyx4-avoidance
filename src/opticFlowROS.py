@@ -258,9 +258,7 @@ class OpticFlowROS():
    def state_cb(self, data):
       rospy.loginfo(data)
       if data.flight_state in ('Teleoperation', 'Waypoint'):
-         self.decision_makers[C0].start()
-         self.decision_makers[C45].start()
-         self.decision_makers[CN45].start()
+         self.start_decision_makers()
    
    def camera_general_cb(self, cam, data):
       """Callback for the camera topic. Add the image to an image queue.
@@ -339,6 +337,16 @@ class OpticFlowROS():
          cam.w, cam.h, 
          (cam.fovx_deg, cam.fovy_deg), orientation=orientation, axis=axis
       ).matched_filter
+
+
+   def reset_desicion_makers(self):
+      for c in self.decision_makers:
+         self.decision_makers[c].reset()
+
+   def start_decision_makers(self):
+      self.decision_makers[C0].start()
+      self.decision_makers[C45].start()
+      self.decision_makers[CN45].start()
        
    def main(self):
       while not rospy.is_shutdown():
@@ -361,7 +369,10 @@ class OpticFlowROS():
 
                   if self.decision_makers[cam].started:
                      decision = self.decision_makers[cam].step(activation)
+                     if cam == C0:
+                        print(decision)
                      if decision:
+                        print(cam, decision)
                         # TODO Do I need to publish this?
                         self.publish_decision(decision, cam)
                         
@@ -369,14 +380,16 @@ class OpticFlowROS():
                            dir = get_direction(self.side_decisions[C45], 
                                                self.side_decisions[CN45])
                            self.publish_direction(dir)
-                           
+                           # Turn off detection while turning
+                           rospy.sleep(0.5)
+                           # Reset the decision makers
+                           self.reset_desicion_makers()
+                           self.start_decision_makers()
                      else:
                         self.publish_decision(decision, cam)
 
                      if cam != C0:
                         self.side_decisions[cam].append(decision)
-
-                     print(cam, activation)
 
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))

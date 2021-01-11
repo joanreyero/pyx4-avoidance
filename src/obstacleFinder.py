@@ -4,7 +4,7 @@ import numpy as np
 
 class ActivationDecisionMaker(object):
     
-    def __init__(self, vel, min_init=15, min_decision=7, threshold_constant=2.5, report=False):
+    def __init__(self, vel, min_init=10, min_decision=7, threshold_constant=2.5, report=False):
         """Initialise decision maker
 
         Args:
@@ -20,8 +20,14 @@ class ActivationDecisionMaker(object):
             report (bool, optional): keep a list of results to report. 
                                      Defaults to False.
         """
-        # Obtained from the offline graphs using np.lstsq
-        w_means, w_stds = 0.14254784, 0.02400344
+        self.vel = vel
+        
+        # Minimum number of activations seen to initialise
+        self.min_init = min_init
+        # Minumum number of decisions True to say obstacle
+        self.min_decision = min_decision
+        self.threshold_constant = threshold_constant
+        self.setup()
         
         self.report = report
         
@@ -32,26 +38,28 @@ class ActivationDecisionMaker(object):
             self.report_decisions = []
             self.report_distance = []
             self.report_mean = []
+
         
+    def setup(self):
+        # Obtained from the offline graphs using np.lstsq
+        w_means, w_stds = 0.14254784, 0.02400344
+
         self.n = 0  # number of activations visited
-        self.std = w_stds * vel  # Dynamic standard deviation
-        self.mean = w_means * vel  # Dynamic mean
+        self.std = w_stds * self.vel  # Dynamic standard deviation
+        self.mean = w_means * self.vel  # Dynamic mean
         self._init = False 
 
         # We need {min_decision} to be True to make a decision
-        self.decisions = deque(maxlen=min_decision)
+        self.decisions = deque(maxlen=self.min_decision)
 
         # To find outliers. Comes from offline data
-        self.noise_mean = vel * 0.14662427
-        self.noise_std = vel * 0.10710734
+        self.noise_mean = self.vel * 0.14662427
+        self.noise_std = self.vel * 0.10710734
 
-        # Minimum number of activations seen to initialise
-        self.min_init = min_init
-        # Minumum number of decisions True to say obstacle
-        self.min_decision = min_decision
-        self.threshold_constant = threshold_constant
         self.started = False
-        self.vel = vel
+
+    def reset(self):
+        self.setup()
 
     def start(self):
         self.started = True
