@@ -4,21 +4,42 @@ import csv
 from os import listdir
 from os.path import isfile, join
 from trajectory_vars import *
-from read_bags import get_files
 
 
-plt.style.use('dark_background')
+#plt.style.use('dark_background')
+
+
+V1, V2, V3 = 'vel: 1', 'vel: 2', 'vel: 3'
 
 COLORS = {
-    'obstacle': '#D0F8C3'
+    'tree': '#788e55',
+    V1: '#51302c',
+    V2: '#58513f',
+    V3: '#874b4b',
 }
 
 TOPIC = '/mavros/local_position/pose'
 
+
 def read_arrays(marker, topic=TOPIC):
     path = 'npys/'
     files = get_files(marker, path)
-    return [np.load(f) for f in files]
+    return [{'points': np.load(join(path, f)), 'vel': get_vel(f)} for f in files]
+
+def get_vel(fname):
+    if 'vel-10' in fname:
+        return V1
+    elif 'vel-20' in fname:
+        return V2
+    elif 'vel-20' in fname:
+        return V3
+    
+
+def get_files(marker, path):
+    marker = str(marker)
+    files = [f for f in listdir(path) if isfile(join(path, f)) 
+             and f[:len(marker)] == marker]
+    return files
 
 
 def read_world(fname):
@@ -35,23 +56,31 @@ def plot_trajectory(marker, fname_world):
 
     # Obstacles
     obstacles = read_world(fname_world)
-    fig = plt.figure()
+    fig, ax = plt.subplots(figsize=(8, 8))
     xs, ys = [], []
+    c = 0.65
+    
     for obstacle in obstacles:
         xs.append(float(obstacle[X]))
         ys.append(- float(obstacle[Y]))
+
+
+    ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize=10, label='tree')
     for size in np.linspace(0, 1, 21):
-        print(size * 1000)
-        plt.plot(ys, xs, 'o', color=COLORS['obstacle'], markersize=size * float(obstacle[SIZE]), alpha=max(0.1, 0.8-size))
+        ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize= c * size * float(obstacle[SIZE]), alpha=max(0.1, 0.8-size))
 
     
     # Trajectories
-    trajectories = parse_bags(marker)
+    trajectories = read_arrays(marker)
     xs, ys = [], []
     for trajectory in trajectories:
-        xs = trajectory[:, 0]
-        ys = -1. * trajectory[:, 1]
-        plt.plot(xs, ys)
+        xs = trajectory['points'][:, 0]
+        ys = -1. * trajectory['points'][:, 1]
+        label = trajectory['vel']
+        ax.plot(ys, xs, color=COLORS[label], label=label, alpha=1)
+    ax.legend()
+    ax.set_xlim(-20, 40)
+    ax.set_ylim(10, 70)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
