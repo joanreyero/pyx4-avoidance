@@ -13,7 +13,7 @@ def parse_world(path, fname):
         writer = csv.writer(file)
         writer.writerow([NAME, SIZE, X, Y])
         for obstacle in OBSTACLES:
-            for child in root.findall('world/model'):
+            for child in root.findall('world/state/model'):
                 if obstacle[NAME] in child.attrib[NAME]:
                     pose = child.find('pose').text.split(' ')[:2]
                     writer.writerow([
