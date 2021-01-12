@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
-import os
+from os import listdir
+from os.path import isfile, join
 from trajectory_vars import *
 
 plt.style.use('dark_background')
@@ -17,10 +18,11 @@ def get_files(marker):
     path = 'bags/'
     files = [f for f in listdir(path) if isfile(join(path, f)) 
              and f[:len(marker)] == marker]
+    print(files)
 
 
 def read_world(fname):
-    with open(os.path.join('csv/', fname + '.csv')) as world_file:
+    with open(join('csv/', fname + '.csv')) as world_file:
         reader = csv.DictReader(world_file, delimiter=',')
         rows = []
         for row in reader:
@@ -48,4 +50,4 @@ def plot_trajectory(fname_world):
 
 
 
-plot_trajectory('circuit-trees')
+get_files('circuit-trees')
