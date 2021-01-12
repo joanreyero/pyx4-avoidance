@@ -5,7 +5,7 @@
     <arg name="world" default="doomsday.world"/>
     <arg name="vehicle" default="typhoon_vision"/>
     <arg name="gui" default="true"/>
-
+    <arg name="save" default="false"/>
 
     <arg name="kinky_walk_noise_flag" default="false" />
     <arg name="optic_flow_type" default="matched_filter" />
@@ -87,6 +87,14 @@
             args="
             --velocity $(arg vel)
           "/>
+
+    <node pkg="rosbag" type="record" name="bagger" output="screen"
+          args="
+          -O $(find pyx4_avoidance)/src/trajectories/bags/$(arg save).bag
+          /mavros/local_position/pose
+          /pyx4_avoidance_node/decision
+          /pyx4_avoidance_node/direction
+         " if="$(eval save != false)"/>
  
 
 </launch>
