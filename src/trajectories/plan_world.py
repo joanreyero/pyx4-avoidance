@@ -45,15 +45,17 @@ def make_obstacle(distance, last):
                     direction=new_dir)
     
 
-def make_report(out):
-    name = os.path.join()
-    r = ""
+def make_report(out, n, d):
+    from os.path import join, isfile
+    name = join('world-plans/', 'plan-n_' + str(n) + '-d_' + str(d) + '.txt')
+    r = "\n\n============================\n"
     for i, obstacle in enumerate(out):
         r += '\nObstacle: ' + str(i) + ':\n'
         r +='  (' + str(obstacle.x) + ', ' + str(obstacle.y) + ')\n'
         r += '  ' + obstacle.direction + '\n'
 
-    print(r)
+    with open(name, "a") as text_file:
+        text_file.write(r)
 
 def plan_world(n, distance, start_cart=(1.00, 0.00), report=True):
     heading = 0
@@ -64,12 +66,15 @@ def plan_world(n, distance, start_cart=(1.00, 0.00), report=True):
         out.append(obstacle)
 
     if report:
-        make_report(out, n, d)
+        make_report(out, n, distance)
 
     return out
         
 
 if __name__ == '__main__':
-    n = 8
-    d = 1
-    plan_world(n, d)
+    import argparse
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('--number', '-n', type=int, default=5)
+    parser.add_argument('--distance', '-d', type=int, default=7)
+    args = parser.parse_args()
+    plan_world(args.number, args.distance)
