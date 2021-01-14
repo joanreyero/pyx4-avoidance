@@ -13,9 +13,9 @@ V1, V2, V3 = 'vel: 1', 'vel: 2', 'vel: 3'
 
 COLORS = {
     'tree': '#788e55',
-    V1: '#51302c',
-    V2: '#58513f',
-    V3: '#874b4b',
+    V1: '#531212',
+    V2: '#62a8dd',
+    V3: '#cfa072',
 }
 
 TOPIC = '/mavros/local_position/pose'
@@ -31,7 +31,7 @@ def get_vel(fname):
         return V1
     elif 'vel-20' in fname:
         return V2
-    elif 'vel-20' in fname:
+    elif 'vel-30' in fname:
         return V3
     
 
@@ -48,7 +48,6 @@ def read_world(fname):
         rows = []
         for row in reader:
             rows.append(row)
-            print(rows)
         return rows
 
 
@@ -82,7 +81,7 @@ def plot_trajectory(marker, fname_world):
     ax.set_xlim(-20, 40)
     ax.set_ylim(10, 70)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()
+    plt.savefig('figs/' + str(marker) + '-trajectories-' + fname_world + '.pdf')
 
 
 
