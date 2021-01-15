@@ -1,0 +1,35 @@
+
+
+============================
+
+Obstacle: 0:
+  (10.0, 0.0)
+  right
+
+Obstacle: 1:
+  (14.14, -14.14)
+  right
+
+Obstacle: 2:
+  (0.0, -30.0)
+  right
+
+Obstacle: 3:
+  (-28.28, -28.28)
+  right
+
+Obstacle: 4:
+  (-49.99, -0.0)
+  left
+
+Obstacle: 5:
+  (-42.42, -42.42)
+  left
+
+Obstacle: 6:
+  (0.0, -69.99)
+  left
+
+Obstacle: 7:
+  (56.56, -56.56)
+  left

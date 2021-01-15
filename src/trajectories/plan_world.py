@@ -57,7 +57,7 @@ def make_report(out, n, d):
     with open(name, "a") as text_file:
         text_file.write(r)
 
-def plan_world(n, distance, start_cart=(1.00, 0.00), report=True):
+def plan_world(n, distance, start_cart=(10.00, 0.00), report=True):
     heading = 0
     out = [Obstacle(x=start_cart[0], y=start_cart[1], direction=np.random.choice(DIRECTIONS))]
 
