@@ -89,8 +89,8 @@ class OpticFlowROS():
 
       self.decision_makers = {
          C0: DecisionMaker(self.target_vel),
-         C45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5),
-         CN45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5)
+         C45: DecisionMaker(self.target_vel, threshold_constant=1.2, min_decision=4),
+         CN45: DecisionMaker(self.target_vel, threshold_constant=1.2, min_decision=4)
       }
             
       self.subscribers(wait_for_imtopic_s)
