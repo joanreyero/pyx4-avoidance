@@ -88,9 +88,9 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel),
-         C45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5),
-         CN45: DecisionMaker(self.target_vel, threshold_constant=1.5, min_decision=5)
+         C0: DecisionMaker(self.target_vel, threshold_constant=4, min_init=3, min_decision=5),
+         C45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3),
+         CN45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3)
       }
             
       self.subscribers(wait_for_imtopic_s)
@@ -119,8 +119,8 @@ class OpticFlowROS():
          self.current_distance = self.distance
 
       self.side_decisions = {
-         C45: deque([], maxlen=10),
-         CN45: deque([], maxlen=10),
+         C45: deque([], maxlen=5),
+         CN45: deque([], maxlen=5),
       }
 
 
@@ -369,8 +369,6 @@ class OpticFlowROS():
 
                   if self.decision_makers[cam].started:
                      decision = self.decision_makers[cam].step(activation)
-                     if cam == C0:
-                        print(decision)
                      if decision:
                         print(cam, decision)
                         # TODO Do I need to publish this?
@@ -379,6 +377,7 @@ class OpticFlowROS():
                         if cam == C0:
                            dir = get_direction(self.side_decisions[C45], 
                                                self.side_decisions[CN45])
+                           print(self.side_decisions)
                            self.publish_direction(dir)
                            # Turn off detection while turning
                            rospy.sleep(0.5)
