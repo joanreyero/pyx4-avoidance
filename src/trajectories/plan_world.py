@@ -8,7 +8,7 @@ INTRA_OBSTACLE_DIST = 2
 
 fields = ('x', 'y', 'direction', 'add')
 
-Obstacle = namedtuple('Obstacle', fields, defaults=(None,) * len(fields))
+Obstacle = namedtuple('Obstacle', fields)
 
 
 def pol2cart(rho, phi):
@@ -48,6 +48,7 @@ def make_obstacle(dist, last, rng):
     if last.direction == LEFT:
         angle = -60
         v = pol2cart(dist, -angle)
+        dir = RIGHT
         add = True
         
     elif last.direction == RIGHT:
@@ -58,8 +59,7 @@ def make_obstacle(dist, last, rng):
     else:
         v = pol2cart(dist, 180)
         add = False
-
-    dir = rng.choice(DIRECTIONS)
+        dir = rng.choice(DIRECTIONS)
 
     #v = dist * v #/ np.linalg.norm(v)
     x, y = last.x + v[0], last.y + v[1]

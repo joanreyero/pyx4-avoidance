@@ -70,31 +70,32 @@ class ActivationDecisionMaker(object):
         if self.n >= self.min_init:
             self._init = True
             
-    def update_stats(self, activation):
+    def update_stats(self, activation, n, mean, std):
         """Update the mean and standard deviation given an activation.
 
         Args:
             activation (float): the current activation
         """
         # Increase n
-        n = self.n + 1
+        n += 1
         # Save old var and mean
-        old_var = self.std ** 2
-        old_mean = self.mean
+        old_var = std ** 2
+        old_mean = mean
+
         # New mean: multiply by n-1 to get the previous sum,
         # add the new activation, and divide by n
-        mean = (self.mean * (n - 1) + activation) / n
+        mean = (mean * (n - 1) + activation) / n
         # New var: 
         # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
-        var = ((float((n - 2)) / (n - 1) * old_var) + 
-               1 / n * (activation - old_mean) ** 2)
+        var = ((float((float(n) - 2)) / (float(n) - 1) * float(old_var)) + 
+               1 / float(n) * (activation - old_mean) ** 2)
         
-        # Update class attributes
-        self.n = n
-        self.mean = mean
-        self.std = np.sqrt(var)
         
-    def is_outlier(self, activation, m=1, p=False):
+        return mean, np.sqrt(var)
+
+        return mean, std
+        
+    def is_outlier(self, activation, m=3, p=False):
         """Find if it as outlier
 
         Args:
@@ -107,7 +108,7 @@ class ActivationDecisionMaker(object):
         """
         dist_from_mean = np.abs(activation - self.noise_mean)
         
-        if p:
+        if p and p == 'cam_0':
             print('Mean:       ', self.noise_mean)
             print('Activation: ', activation)
             print('Distance:   ', dist_from_mean)
@@ -115,6 +116,7 @@ class ActivationDecisionMaker(object):
             print('Outlier:    ', dist_from_mean >= m * self.noise_std)
             
         return dist_from_mean >= m * self.noise_std
+        #return False
         
     def update_threshold(self):
         """Update the threshold by using
@@ -146,8 +148,8 @@ class ActivationDecisionMaker(object):
         if sum(self.decisions) == self.min_decision:
             return True
         return False
-    
-    def step(self, activation, distance=False):
+
+    def step(self, activation, distance=False, print_outliers=False):
         """Perform a checking step
 
         Args:
@@ -160,9 +162,13 @@ class ActivationDecisionMaker(object):
         """
         if self._init and self.started:
             # Check for outlier
-            if not self.is_outlier(activation):
+            if not self.is_outlier(activation, p=print_outliers):
                 # If it is not, update stats and threshold
-                self.update_stats(activation)
+                self.mean, self.std = self.update_stats(activation, self.n, 
+                                                        self.mean, self.std)
+                (self.noise_mean, self.noise_std) = self.update_stats(activation, self.n, self.noise_mean, self.noise_std)
+                self.n += 1
+                
                 threshold = self.update_threshold()
                 # Make decision
                 decision = self.make_decision(activation, 
@@ -178,7 +184,8 @@ class ActivationDecisionMaker(object):
                     else:
                         self.report_decisions.append(np.nan)
                     
-                return decision
+                return decision, threshold
+
                 
         elif self.started:
             self.n += 1
@@ -191,6 +198,10 @@ class ActivationDecisionMaker(object):
                 self.report_mean.append(self.mean)
                 self.report_decisions.append(np.nan)
                 self.report_distance.append(np.nan)
-                
-        return False
+
+        thr = self.is_outlier(activation)
+        if thr: 
+            return False, 'OUTLIER'
+        else:
+            return False, 0
                     

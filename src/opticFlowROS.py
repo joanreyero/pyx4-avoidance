@@ -88,7 +88,7 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, threshold_constant=4, min_init=3, min_decision=5),
+         C0: DecisionMaker(self.target_vel, threshold_constant=10, min_init=0, min_decision=5),
          C45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3),
          CN45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3)
       }
@@ -105,8 +105,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
-         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
+         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 45.0]),
+         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, -45.0]),
       }
 
       self.data_collection = data_collection
@@ -119,6 +119,11 @@ class OpticFlowROS():
          self.current_distance = self.distance
 
       self.side_decisions = {
+         C45: deque([], maxlen=5),
+         CN45: deque([], maxlen=5),
+      }
+
+      self.side_activations = {
          C45: deque([], maxlen=5),
          CN45: deque([], maxlen=5),
       }
@@ -256,7 +261,6 @@ class OpticFlowROS():
          self.cam = Camera(data)
 
    def state_cb(self, data):
-      rospy.loginfo(data)
       if data.flight_state in ('Teleoperation', 'Waypoint'):
          self.start_decision_makers()
    
@@ -368,16 +372,21 @@ class OpticFlowROS():
                   self.publish_activation(activation, cam)
 
                   if self.decision_makers[cam].started:
-                     decision = self.decision_makers[cam].step(activation)
+                     # TODO: REMOVE THE THRESHOLD ONCE DEBUGGED
+                     decision, thr = self.decision_makers[cam].step(activation, print_outliers=cam)
                      if decision:
-                        print(cam, decision)
                         # TODO Do I need to publish this?
                         self.publish_decision(decision, cam)
                         
                         if cam == C0:
+                           print('\n Camera 0:')
+                           print('  - Activation: ' + str(activation))
+                           print('  - Threshold: ' + str(thr))
                            dir = get_direction(self.side_decisions[C45], 
-                                               self.side_decisions[CN45])
-                           print(self.side_decisions)
+                                               self.side_decisions[CN45],
+                                               self.side_activations[C45],
+                                               self.side_activations[CN45],
+                                               screen=True)
                            self.publish_direction(dir)
                            # Turn off detection while turning
                            rospy.sleep(0.5)
@@ -389,6 +398,11 @@ class OpticFlowROS():
 
                      if cam != C0:
                         self.side_decisions[cam].append(decision)
+                        self.side_activations[cam].append(activation)
+                     else:
+                        print('\nCamera 0 without decision:')
+                        print('  - Activation: ' + str(activation))
+                        print('  - Threshold: ' + str(thr) + '\n')
 
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))
