@@ -11,8 +11,7 @@ def get_activation(flow, mf):
     Returns:
         float: activation
     """
-    a = np.linalg.norm(flow, axis=2)
-    normalise = a[a > 1].size
+
     return np.sum(np.sum(flow * mf, axis=2)) / flow.size  #/ flow[:, :, 0].size
 #    return np.sum(flow * mf) / flow.size
     

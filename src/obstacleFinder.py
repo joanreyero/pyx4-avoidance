@@ -166,7 +166,7 @@ class ActivationDecisionMaker(object):
     def make_decision(self, cam=False):
         grads = np.gradient(np.array(self.last_activations))
         increasing = grads[np.where(grads > 0.01)].size
-        if cam == 'cam_0':
+        if cam == 'cam_n45':
             print('\nGradients for camera ' + cam)
             print(grads)
             print('')
@@ -186,7 +186,7 @@ class ActivationDecisionMaker(object):
         if self._init and self.started:
             # Check for outlier
             self.last_activations.append(activation)
-            if not self.is_outlier(activation, report=cam):
+            if not self.is_outlier(activation, report=False):
                 # If it is not, update stats and threshold
                 self.mean, self.std = self.update_stats(activation, self.n, 
                                                         self.mean, self.std)
