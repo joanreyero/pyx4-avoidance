@@ -88,9 +88,9 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, threshold_constant=10, min_init=0, min_decision=5),
-         C45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3),
-         CN45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=3)
+         C0: DecisionMaker(self.target_vel, threshold_constant=0.7, min_init=7, min_decision=3),
+         C45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=0),
+         CN45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=0)
       }
             
       self.subscribers(wait_for_imtopic_s)
@@ -373,7 +373,7 @@ class OpticFlowROS():
 
                   if self.decision_makers[cam].started:
                      # TODO: REMOVE THE THRESHOLD ONCE DEBUGGED
-                     decision, thr = self.decision_makers[cam].step(activation, print_outliers=cam)
+                     decision, thr = self.decision_makers[cam].step(activation, cam=cam)
                      if decision:
                         # TODO Do I need to publish this?
                         self.publish_decision(decision, cam)
@@ -399,10 +399,10 @@ class OpticFlowROS():
                      if cam != C0:
                         self.side_decisions[cam].append(decision)
                         self.side_activations[cam].append(activation)
-                     else:
-                        print('\nCamera 0 without decision:')
-                        print('  - Activation: ' + str(activation))
-                        print('  - Threshold: ' + str(thr) + '\n')
+                        
+                     # print('\nCamera ' + cam + ' without decision:')
+                     # print('  - Activation: ' + str(activation))
+                     # print('  - Threshold: ' + str(thr) + '\n')
 
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))

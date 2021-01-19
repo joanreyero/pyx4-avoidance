@@ -55,7 +55,7 @@ class ActivationDecisionMaker(object):
         # To find outliers. Comes from offline data
         self.noise_mean = self.vel * 0.14662427
         self.noise_std = self.vel * 0.10710734
-
+        self.last_activations = deque(self.mean + self.std * np.random.rand(10), maxlen=10)
         self.started = False
 
     def reset(self):
@@ -95,7 +95,7 @@ class ActivationDecisionMaker(object):
 
         return mean, std
         
-    def is_outlier(self, activation, m=3, p=False):
+    def is_outlier_old(self, activation, m=3, report=False):
         """Find if it as outlier
 
         Args:
@@ -117,6 +117,20 @@ class ActivationDecisionMaker(object):
             
         return dist_from_mean >= m * self.noise_std
         #return False
+
+    def is_outlier(self, activation, report=False):
+        previous = np.array(self.last_activations) * 1.5
+        percentile_75 = np.percentile(previous, 75)
+        outlier_p = activation >= percentile_75 and activation > 0
+
+        if report and report == 'cam_0':
+            print('\nCamera: ' + report)
+            print('  - 75th Percentile: ' + str(percentile_75))
+            print('  - Activation: ' + str(activation))
+            print('  - IS OUTLIER: ' + str(outlier_p) + '\n')
+
+        return outlier_p
+        
         
     def update_threshold(self):
         """Update the threshold by using
@@ -127,7 +141,7 @@ class ActivationDecisionMaker(object):
         """
         return self.mean + self.threshold_constant * self.std
     
-    def make_decision(self, filt_act, threshold):
+    def make_decision_old(self, filt_act, threshold):
         """Make a stopping decision.
         Will return true if filt_act > threshold and
         there all other items in self.decisions are True.
@@ -149,7 +163,16 @@ class ActivationDecisionMaker(object):
             return True
         return False
 
-    def step(self, activation, distance=False, print_outliers=False):
+    def make_decision(self, cam=False):
+        grads = np.gradient(np.array(self.last_activations))
+        increasing = grads[np.where(grads > 0.01)].size
+        if cam == 'cam_0':
+            print('\nGradients for camera ' + cam)
+            print(grads)
+            print('')
+        return increasing >= 7
+
+    def step(self, activation, distance=False, cam=False):
         """Perform a checking step
 
         Args:
@@ -162,17 +185,16 @@ class ActivationDecisionMaker(object):
         """
         if self._init and self.started:
             # Check for outlier
-            if not self.is_outlier(activation, p=print_outliers):
+            self.last_activations.append(activation)
+            if not self.is_outlier(activation, report=cam):
                 # If it is not, update stats and threshold
                 self.mean, self.std = self.update_stats(activation, self.n, 
                                                         self.mean, self.std)
-                (self.noise_mean, self.noise_std) = self.update_stats(activation, self.n, self.noise_mean, self.noise_std)
                 self.n += 1
                 
                 threshold = self.update_threshold()
                 # Make decision
-                decision = self.make_decision(activation, 
-                                              threshold)
+                decision = self.make_decision(cam=cam)
 
                 if self.report:  # Only relevant for reporting
                     self.report_distance.append(distance)
