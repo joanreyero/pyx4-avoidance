@@ -9,8 +9,7 @@ from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
 from pyx4_avoidance.msg import flow as FlowMsg
 from opticFlow import OpticFlow
-from activation import get_activation
-from avoidance_direction import get_direction
+from avoidance_functions import get_direction, get_activation
 from obstacleFinder import ActivationDecisionMaker as DecisionMaker
 from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
@@ -88,9 +87,9 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, threshold_constant=0.7, min_init=7, min_decision=3),
-         C45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=0),
-         CN45: DecisionMaker(self.target_vel, threshold_constant=1, min_decision=3, min_init=0)
+         C0: DecisionMaker(self.target_vel, min_init=7, min_decisions=2),
+         C45: DecisionMaker(self.target_vel, min_decisions=2),
+         CN45: DecisionMaker(self.target_vel, min_decisions=2),
       }
             
       self.subscribers(wait_for_imtopic_s)
@@ -102,21 +101,13 @@ class OpticFlowROS():
          CN45: OpticFlow(camera_instance=self.cam),
       }
       
-      
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
          C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 45.0]),
          CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, -45.0]),
       }
 
-      self.data_collection = data_collection
-      if self.data_collection:
-         self.pos_subs = rospy.Subscriber(
-         '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
-         )
-         #self.distance = 30.13
-         self.distance = 30.13 - 4.8
-         self.current_distance = self.distance
+      self._init_data_collection(data_collection)
 
       self.side_decisions = {
          C45: deque([], maxlen=5),
@@ -128,6 +119,15 @@ class OpticFlowROS():
          CN45: deque([], maxlen=5),
       }
 
+   def _init_data_collection(self, data_collection):
+      self.data_collection = data_collection
+      if self.data_collection:
+         self.pos_subs = rospy.Subscriber(
+         '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
+         )
+         #self.distance = 30.13
+         self.distance = 30.13 - 4.8
+         self.current_distance = self.distance
 
    def publishers(self):
       """Initialise publishers
@@ -322,7 +322,6 @@ class OpticFlowROS():
       self.decision_msgs[cam].header.stamp = rospy.Time.now()
       self.decision_publishers[cam].publish(self.decision_msgs[cam])
 
-
    def publish_direction(self, d):
       """Publish the main decision message, which will make
       the drone go back, go left or go right
@@ -333,15 +332,12 @@ class OpticFlowROS():
       self.avoidance_direction_msg.direction = d
       self.avoidance_direction_msg.header.stamp = rospy.Time.now()
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
-      
-
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
          (cam.fovx_deg, cam.fovy_deg), orientation=orientation, axis=axis
       ).matched_filter
-
 
    def reset_desicion_makers(self):
       for c in self.decision_makers:
@@ -351,6 +347,36 @@ class OpticFlowROS():
       self.decision_makers[C0].start()
       self.decision_makers[C45].start()
       self.decision_makers[CN45].start()
+
+   def avoidance_step(self, cam, flow):
+      activation = get_activation(flow, self.matched_filters[cam])
+      self.publish_activation(activation, cam)
+
+      if self.decision_makers[cam].started:
+         decision = self.decision_makers[cam].step(activation, report_cam=C0)
+         self.publish_decision(decision, cam)
+         
+         if decision:
+            if cam == C0:
+               dir = get_direction(self.side_decisions[C45], 
+                                   self.side_decisions[CN45],
+                                   self.side_activations[C45],
+                                   self.side_activations[CN45],
+                                   screen=True)
+               
+               # This will be catched by the ROS node that will make the robot turn
+               self.publish_direction(dir)
+               # Turn off detection while turning
+               rospy.sleep(0.5)
+               # Reset the decision makers
+               self.reset_desicion_makers()
+               self.start_decision_makers()
+
+         if cam != C0:
+            self.side_decisions[cam].append(decision)
+            self.side_activations[cam].append(activation)
+            
+      return activation
        
    def main(self):
       while not rospy.is_shutdown():
@@ -368,41 +394,7 @@ class OpticFlowROS():
                self.publish_flow(flow, cam)
                
                if self.OF_modules[cam].initialised:
-                  activation = get_activation(flow, self.matched_filters[cam])
-                  self.publish_activation(activation, cam)
-
-                  if self.decision_makers[cam].started:
-                     # TODO: REMOVE THE THRESHOLD ONCE DEBUGGED
-                     decision, thr = self.decision_makers[cam].step(activation, cam=cam)
-                     if decision:
-                        # TODO Do I need to publish this?
-                        self.publish_decision(decision, cam)
-                        
-                        if cam == C0:
-                           print('\n Camera 0:')
-                           print('  - Activation: ' + str(activation))
-                           print('  - Threshold: ' + str(thr))
-                           dir = get_direction(self.side_decisions[C45], 
-                                               self.side_decisions[CN45],
-                                               self.side_activations[C45],
-                                               self.side_activations[CN45],
-                                               screen=True)
-                           self.publish_direction(dir)
-                           # Turn off detection while turning
-                           rospy.sleep(0.5)
-                           # Reset the decision makers
-                           self.reset_desicion_makers()
-                           self.start_decision_makers()
-                     else:
-                        self.publish_decision(decision, cam)
-
-                     if cam != C0:
-                        self.side_decisions[cam].append(decision)
-                        self.side_activations[cam].append(activation)
-                        
-                     # print('\nCamera ' + cam + ' without decision:')
-                     # print('  - Activation: ' + str(activation))
-                     # print('  - Threshold: ' + str(thr) + '\n')
+                  activation = self.avoidance_step(cam, flow)                        
 
                   if self.data_collection and cam == C0:
                      rospy.loginfo('Activation: ' + str(activation))
