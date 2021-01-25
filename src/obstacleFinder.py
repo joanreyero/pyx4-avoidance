@@ -5,16 +5,21 @@ import numpy as np
 
 class ActivationDecisionMaker(object):
     
-    def __init__(self, vel, min_init=5, min_decisions=1, report=False):
+    def __init__(self, vel, min_init=5, min_decisions=1, min_gradient_constant=0.01, check_outliers=True, maxlen='1+', report=False):
         self.vel = vel
         
         # Minimum number of activations seen to initialise
         self.min_init = min_init
         # Minumum number of decisions True to say obstacle
         self.min_decisions = min_decisions
+
+        self.min_gradient_constant = min_gradient_constant
+        self.maxlen = self.get_maxlen(maxlen)
+        
         self.setup()
         
         self.report = report
+        self.last_activations = deque(self.mean + self.std * np.random.rand(10), maxlen=10)
         
         if self.report:
             # Initalise empty reporting
@@ -22,6 +27,7 @@ class ActivationDecisionMaker(object):
             self.report_decisions = []
             self.report_distance = []
 
+        self.check_outliers = check_outliers
         
     def setup(self):
         # Obtained from the offline graphs using np.lstsq
@@ -33,10 +39,11 @@ class ActivationDecisionMaker(object):
         self._init = False 
 
         # We need {min_decisions} to be True to make a decision
-        self.decisions = deque(maxlen= 1 + self.min_decisions)
+        self.decisions = deque(maxlen=self.maxlen)
 
-        self.last_activations = deque(self.mean + self.std * np.random.rand(10), maxlen=10)
         self.started = False
+
+        self.min_gradient = self.min_gradient_constant * (1 + (self.vel - 1))
 
     def reset(self):
         self.setup()
@@ -50,7 +57,13 @@ class ActivationDecisionMaker(object):
         if self.n >= self.min_init:
             self._init = True 
 
-    def is_outlier(self, activation, report_cam=False, target_report_cam=C0):
+    def get_maxlen(self, maxlen):
+        if '+' in maxlen:
+            return self.min_decisions + int(maxlen[:maxlen.find('+')])
+        else:
+            return self.min_decisions * int(maxlen[:maxlen.find('*')])
+
+    def is_outlier(self, activation, report_cam=False, target_report_cam=C45):
         previous = np.array(self.last_activations) * 1.5
         percentile_75 = np.percentile(previous, 75)
         outlier_p = activation >= percentile_75 and activation > 0
@@ -66,20 +79,20 @@ class ActivationDecisionMaker(object):
     def make_one_decision(self, report_cam=False, target_report_cam=C0,
                           only_report_when_decision=True):
         grads = np.gradient(np.array(self.last_activations))
-        increasing = grads[np.where(grads > 0.01 * (1 + (self.vel - 1)))]
+        increasing = grads[np.where(grads > self.min_gradient)]
         decision = increasing.size >= 7
 
         if report_cam == target_report_cam:
             if not only_report_when_decision or decision:
-                print('\nGradients for camera ' + report_cam)
-                print(grads)
-                print('\nGradients that passed: ')
+                print('\nGradients that passed for camera ' + report_cam)
                 print(increasing)
+                # print('\nGradients that passed: ')
+                # print(increasing)
                 print('')
             
         return decision
 
-    def make_decision(self, report_cam=False, target_report_cam=C0, 
+    def make_decision(self, report_cam=False, target_report_cam=C45, 
                       only_report_decision=False):
 
         decisions = self.decisions
@@ -107,12 +120,13 @@ class ActivationDecisionMaker(object):
         if self._init and self.started:
             # Check for outlier
             self.last_activations.append(activation)
-            if not self.is_outlier(activation, report_cam=False):
+            if (not self.is_outlier(activation, report_cam=False) or 
+                not self.check_outliers):
                 self.n += 1
                 
                 # Make decision
                 decision = self.make_decision(report_cam=report_cam, 
-                                              target_report_cam=report_cam,
+                                              target_report_cam=C45,
                                               only_report_decision=False)
                 self.decisions.append(decision)
 
@@ -123,6 +137,7 @@ class ActivationDecisionMaker(object):
    
         elif self.started:
             self.n += 1
+            self.last_activations.append(activation)
             # Check whether we can initialise
             self.check_init()
             self.add_to_report(0, np.nan, np.nan)

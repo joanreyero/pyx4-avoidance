@@ -22,12 +22,14 @@ def get_direction(left, right, left_act, right_act, screen=False):
     dir = BACK
     num_left, num_right = sum(left), sum(right)
     
+    left_act = list(left_act)[2:]
+    right_act = list(right_act)[2:]
     if num_left == 0 and num_right > 0:
         dir = LEFT
     elif num_right == 0 and num_left > 0:
         dir =  RIGHT
     elif num_right == 0 and num_left == 0:
-        if left_act > right_act:
+        if sum(left_act) > sum(right_act):
             dir = RIGHT
         else: dir = LEFT
 
@@ -42,9 +44,13 @@ def report_direction(dir, num_left, num_right, left_act, right_act):
     if num_left + num_right > 0:
         print('  - Left  decisions: ' + str(num_left))
         print('  - Right decisions: ' + str(num_right))
+        print('  - Left  activation: ' + ', '.join(map(lambda x: str(round(x, 2)), left_act)))
+        print('  - Right activation: ' + ', '.join(map(lambda x: str(round(x, 2)), right_act)))
     else:
-        print('  - Left  activation: ' + str(round(sum(left_act), 2)))
-        print('  - Right activation: ' + str(round(sum(right_act), 2)) + '\n')
-    
+        print('  - Left  activation: ' + ', '.join(map(lambda x: str(round(x, 2)), left_act)))
+        print('  - Right activation: ' + ', '.join(map(lambda x: str(round(x, 2)), right_act)))
+        # print('  - Left  activation: ' + str(round(sum(left_act), 2)))
+        # print('  - Right activation: ' + str(round(sum(right_act), 2)) + '\n')
+
         
         

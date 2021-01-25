@@ -87,9 +87,13 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, min_init=7, min_decisions=2),
-         C45: DecisionMaker(self.target_vel, min_decisions=2),
-         CN45: DecisionMaker(self.target_vel, min_decisions=2),
+         C0: DecisionMaker(self.target_vel, min_init=5, min_decisions=2),
+         C45: DecisionMaker(self.target_vel, min_decisions=2,
+                            min_gradient_constant=0.02, maxlen='2*', 
+                            check_outliers=False),
+         CN45: DecisionMaker(self.target_vel, min_decisions=2, 
+                             min_gradient_constant=0.02, maxlen='2*',
+                             check_outliers=False),
       }
             
       self.subscribers(wait_for_imtopic_s)
@@ -103,8 +107,8 @@ class OpticFlowROS():
       
       self.matched_filters = {
          C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 45.0]),
-         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, -45.0]),
+         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
+         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
       }
 
       self._init_data_collection(data_collection)
@@ -349,11 +353,12 @@ class OpticFlowROS():
       self.decision_makers[CN45].start()
 
    def avoidance_step(self, cam, flow):
+      
       activation = get_activation(flow, self.matched_filters[cam])
       self.publish_activation(activation, cam)
 
       if self.decision_makers[cam].started:
-         decision = self.decision_makers[cam].step(activation, report_cam=C0)
+         decision = self.decision_makers[cam].step(activation, report_cam=C45)
          self.publish_decision(decision, cam)
          
          if decision:
@@ -367,7 +372,7 @@ class OpticFlowROS():
                # This will be catched by the ROS node that will make the robot turn
                self.publish_direction(dir)
                # Turn off detection while turning
-               rospy.sleep(0.5)
+               rospy.sleep(1.3)
                # Reset the decision makers
                self.reset_desicion_makers()
                self.start_decision_makers()
