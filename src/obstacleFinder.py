@@ -5,7 +5,7 @@ import numpy as np
 
 class ActivationDecisionMaker(object):
     
-    def __init__(self, vel, min_init=5, min_decisions=1, min_gradient_constant=0.005, check_outliers=True, maxlen='1+', report=False):
+    def __init__(self, vel, min_init=5, min_decisions=1, min_gradient_constant=0.002, check_outliers=True, maxlen='1+', report=False):
         self.vel = vel
         
         # Minimum number of activations seen to initialise
@@ -75,40 +75,25 @@ class ActivationDecisionMaker(object):
 
         return outlier_p
         
-    def make_one_decision(self, activations, report_cam=False, target_report_cam=C0,
-                          only_report_when_decision=True):
+    def make_one_decision(self, activations):
         grads = np.gradient(np.array(activations))
         increasing = grads[np.where(grads > self.min_gradient)]
         decision = increasing.size >= 7
-
-        if report_cam == target_report_cam:
-            if not only_report_when_decision or decision:
-                print('\nGradients that passed for camera ' + report_cam)
-                print(increasing)
-                print('\nGradients: ')
-                print(grads)
-                print('\nActivations: ')
-                print(list(map(lambda x: round(x, 2), activations)))
-                print('')
             
         return decision
 
-    def make_decision(self, activations, report_cam=False, target_report_cam=CN45, 
-                      only_report_decision=False):
+    def make_decision(self, activations):
 
         decisions = self.decisions
         last_decision = self.make_one_decision(
-            activations,
-            report_cam=report_cam, 
-            target_report_cam=target_report_cam,
-            only_report_when_decision=only_report_decision
+            activations
         )
         decisions.append(last_decision)
        
         return sum(decisions) >= self.min_decisions
     
 
-    def step(self, activations, activation, distance=False, report_cam=False):
+    def step(self, activations, activatione):
         """Perform a checking step
 
         Args:
@@ -127,10 +112,7 @@ class ActivationDecisionMaker(object):
                 self.n += 1
                 
                 # Make decision
-                decision = self.make_decision(activations,
-                                              report_cam=report_cam, 
-                                              target_report_cam=C45,
-                                              only_report_decision=False)
+                decision = self.make_decision(activations)
                 self.decisions.append(decision)
 
                 # For reporting                

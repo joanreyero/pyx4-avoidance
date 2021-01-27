@@ -87,7 +87,7 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, min_decisions=2),
+         C0: DecisionMaker(self.target_vel, min_decisions=2, maxlen='1+', min_gradient_constant=0.005),
          C45: DecisionMaker(self.target_vel, min_decisions=1,
                             min_gradient_constant=0.03, maxlen='2*', 
                             check_outliers=False),
@@ -131,7 +131,7 @@ class OpticFlowROS():
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
          #self.distance = 30.13
-         self.distance = 30.13 - 4.8
+         self.distance = 20
          self.current_distance = self.distance
 
    def publishers(self):
@@ -354,14 +354,13 @@ class OpticFlowROS():
       self.decision_makers[CN45].start()
 
    def avoidance_step(self, cam, flow):
-      
       activation = get_activation(flow, self.matched_filters[cam])
       self.activations[cam].append(activation)
    
       self.publish_activation(activation, cam)
 
       if self.decision_makers[cam].started:
-         decision = self.decision_makers[cam].step(self.activations[cam], activation, report_cam=C0)
+         decision = self.decision_makers[cam].step(self.activations[cam], activation)
          self.publish_decision(decision, cam)
          
          if decision:
@@ -382,8 +381,29 @@ class OpticFlowROS():
 
          if cam != C0:
             self.side_decisions[cam].append(decision)
+
+         if self.data_collection:
+            self.report(cam)
             
       return activation
+
+   def report(self, cam):
+      to_report = [C0]
+      if cam in to_report:
+
+         grads = np.gradient(np.array(self.activations[cam]))
+         increasing = grads[np.where(grads > 0.001)]
+         distance = self.current_distance
+         
+         print('\nDistance: ')
+         print(self.current_distance)
+         print('Number of positive gradients)
+         print(len(increasing))
+         print('Mean activations:')
+         print(np.mean(self.activations[cam]))
+         print('Median activations:')
+         print(np.median(self.activations[cam]))
+         print('')
        
    def main(self):
       while not rospy.is_shutdown():
@@ -403,9 +423,9 @@ class OpticFlowROS():
                if self.OF_modules[cam].initialised:
                   activation = self.avoidance_step(cam, flow)                        
 
-                  if self.data_collection and cam == C0:
-                     rospy.loginfo('Activation: ' + str(activation))
-                     rospy.loginfo('Distance: ' + str(self.current_distance))
+                  # if self.data_collection and cam == C0:
+                  #    rospy.loginfo('Activation: ' + str(activation))
+                  #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
             if self.data_collection and self.current_distance < 0.5:
                os.system("rosnode kill --all")
@@ -421,7 +441,7 @@ if __name__ == '__main__':
    parser.add_argument('--velocity', '-v', type=float, default=2.0)    
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False)
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=True)
    OF.main()
       
         
