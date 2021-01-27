@@ -15,6 +15,9 @@ from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from pyx4_avoidance.msg import avoidancedirection as AvoidanceDirectionMsg
+
+from pyx4_avoidance.msg import avoidancedata as AvoidanceDataMsg
+
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -125,13 +128,14 @@ class OpticFlowROS():
       }
 
    def _init_data_collection(self, data_collection):
+      self.start_data_collection = False
       self.data_collection = data_collection
       if self.data_collection:
          self.pos_subs = rospy.Subscriber(
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
          #self.distance = 30.13
-         self.distance = 20
+         self.distance = 19
          self.current_distance = self.distance
 
    def publishers(self):
@@ -179,6 +183,19 @@ class OpticFlowROS():
       )
 
       self.avoidance_direction_msg = AvoidanceDirectionMsg()  # Left, Right or Back
+
+      self.avoidance_data_publisher = rospy.Publisher(
+         self.node_name + '/avoidance_data', 
+         AvoidanceDataMsg, 
+         queue_size=10
+      )
+      self.avoidance_data_msg = AvoidanceDataMsg(
+         vel=0.0,
+         distance=0.0,
+         activation_0=[],
+         activation_45=[],
+         activation_n45=[]
+      )
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -267,6 +284,8 @@ class OpticFlowROS():
 
    def state_cb(self, data):
       if data.flight_state in ('Teleoperation', 'Waypoint'):
+         if self.data_collection:
+            self.start_data_collection=True
          self.start_decision_makers()
    
    def camera_general_cb(self, cam, data):
@@ -338,6 +357,16 @@ class OpticFlowROS():
       self.avoidance_direction_msg.header.stamp = rospy.Time.now()
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
 
+
+   def publish_data(self):
+      if self.start_data_collection:
+         self.avoidance_data_msg.vel=self.target_vel
+         self.avoidance_data_msg.distance=self.current_distance
+         self.avoidance_data_msg.activation_0=list(self.activations[C0])
+         self.avoidance_data_msg.activation_45=list(self.activations[C45])
+         self.avoidance_data_msg.activation_n45=list(self.activations[CN45])
+         self.avoidance_data_publisher.publish(self.avoidance_data_msg)
+
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
          cam.w, cam.h, 
@@ -357,33 +386,30 @@ class OpticFlowROS():
       activation = get_activation(flow, self.matched_filters[cam])
       self.activations[cam].append(activation)
    
-      self.publish_activation(activation, cam)
+      #self.publish_activation(activation, cam)
 
-      if self.decision_makers[cam].started:
-         decision = self.decision_makers[cam].step(self.activations[cam], activation)
-         self.publish_decision(decision, cam)
+      #if self.decision_makers[cam].started:
+       #  decision = self.decision_makers[cam].step(self.activations[cam], activation)
+         #self.publish_decision(decision, cam)
          
-         if decision:
-            if cam == C0:
-               dir = get_direction(self.side_decisions[C45], 
-                                   self.side_decisions[CN45],
-                                   self.activations[C45],
-                                   self.activations[CN45],
-                                   screen=True)
+         # if decision:
+         #    if cam == C0:
+         #       dir = get_direction(self.side_decisions[C45], 
+         #                           self.side_decisions[CN45],
+         #                           self.activations[C45],
+         #                           self.activations[CN45],
+         #                           screen=True)
 
-               # This will be catched by the ROS node that will make the robot turn
-               self.publish_direction(dir)
-               # Turn off detection while turning
-               rospy.sleep(1.3)
-               # Reset the decision makers
-               self.reset_desicion_makers()
-               self.start_decision_makers()
+         #       # This will be catched by the ROS node that will make the robot turn
+         #       self.publish_direction(dir)
+         #       # Turn off detection while turning
+         #       rospy.sleep(1.3)
+         #       # Reset the decision makers
+         #       self.reset_desicion_makers()
+         #       self.start_decision_makers()
 
-         if cam != C0:
-            self.side_decisions[cam].append(decision)
-
-         if self.data_collection:
-            self.report(cam)
+         # if cam != C0:
+         #    self.side_decisions[cam].append(decision)
             
       return activation
 
@@ -397,7 +423,7 @@ class OpticFlowROS():
          
          print('\nDistance: ')
          print(self.current_distance)
-         print('Number of positive gradients)
+         print('Number of positive gradients')
          print(len(increasing))
          print('Mean activations:')
          print(np.mean(self.activations[cam]))
@@ -418,7 +444,7 @@ class OpticFlowROS():
                this_image_time = this_image_time - self.initial_times[cam]
 
                flow = self.OF_modules[cam].step(this_image, this_image_time)
-               self.publish_flow(flow, cam)
+               #self.publish_flow(flow, cam)
                
                if self.OF_modules[cam].initialised:
                   activation = self.avoidance_step(cam, flow)                        
@@ -427,9 +453,10 @@ class OpticFlowROS():
                   #    rospy.loginfo('Activation: ' + str(activation))
                   #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
-            if self.data_collection and self.current_distance < 0.5:
+            if self.data_collection and self.current_distance < 2:
                os.system("rosnode kill --all")
 
+         self.publish_data()
       
 if __name__ == '__main__':
    rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)

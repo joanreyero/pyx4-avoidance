@@ -1,0 +1,98 @@
+<launch>
+    <arg name="world" default="doomsday.world"/>
+    <arg name="vehicle" default="typhoon_vision"/>
+    <arg name="gui" default="true"/>
+    <arg name="bag_name" default="new"/>
+    <arg name="save" default="false"/>
+    <arg name="vel" default="1"/>
+    <arg name="data-collection" value="False"/>
+
+
+    <arg name="kinky_walk_noise_flag" default="false" />
+    <arg name="optic_flow_type" default="matched_filter" />
+    <arg name="kink_eccentricity" default="0.66" />
+    <arg name="do_height_adjust_outbound" default="False" />
+    <arg name="height_adjust_random_seed" default="2020" />
+    <arg name="height_adjust_amplitude" default="1.0" />
+    <arg name="height_adjust_points" default="10" />
+
+
+    MAVROS NODE
+    <include file="$(find px4)/launch/mavros_posix_sitl.launch">
+        <arg name="world" default="$(arg world)"/>
+        <arg name="verbose" value="false"/>
+        <arg name="vehicle" value="$(arg vehicle)"/>
+        <!--<arg name="interactive" value="false"/>-->
+        <!--<arg name="respawn_gazebo" value="true"/>-->
+        <arg name="respawn_mavros" value="false"/>
+        <arg name="gui" value="$(arg gui)"/>
+    </include>
+
+    
+
+     <!--VISON PROCESSING NODE-->
+    <node pkg="image_proc" type="image_proc" name="image_proc" ns="/cam_0"/>
+    <node pkg="image_proc" type="image_proc" name="image_proc" ns="/cam_45"/>
+    <node pkg="image_proc" type="image_proc" name="image_proc" ns="/cam_n45"/>
+
+    <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img">
+        <param name="use_scale" type="bool" value="false" />
+        <!-- <param name="width" type="int" value="235" /> -->
+        <param name="width" type="int" value="240" />
+        <!-- <param name="height" type="int" value="150" /> -->
+        <param name="height" type="int" value="135" />
+        <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
+        <!-- remap input topics -->
+        <remap from="image" to="/cam_0/image_mono"/>
+        <remap from="camera_info" to="/cam_0/camera_info"/>
+        <!-- remap output topics -->
+        <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
+        <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img_45">
+        <param name="use_scale" type="bool" value="false" />
+        <param name="width" type="int" value="240" />
+        <param name="height" type="int" value="135" />
+        <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
+        <!-- remap input topics -->
+        <remap from="image" to="/cam_45/image_mono"/>
+        <remap from="camera_info" to="/cam_45/camera_info"/>
+        <!-- remap output topics -->
+        <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
+        <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img_n45">
+        <param name="use_scale" type="bool" value="false" />
+        <param name="width" type="int" value="240" />
+        <param name="height" type="int" value="135" />
+        <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
+        <!-- remap input topics -->
+        <remap from="image" to="/cam_45/image_mono"/>
+        <remap from="camera_info" to="/cam_45/camera_info"/>
+        <!-- remap output topics -->
+        <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
+        <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
+    </node>
+
+    pyx4_avoidance NODE
+    <node pkg="pyx4_avoidance" type="missionAvoidance.py" name="pyx4_avoudance_data_mission" output="screen"
+        args="
+          --xvel $(arg vel)
+          "/>    
+    <node pkg="rosbag" type="record" name="bagger" output="screen"
+          args="
+          -O $(find pyx4_avoidance)/src/nn/bags/$(arg save).bag
+          /pyx4_avoidance_node/avoidance_data
+         " if="$(eval save != false)"/>                  
+    
+    Optic flow node
+    <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="screen"
+    args="
+            --data_collection $(arg data-collection)
+            --velocity $(arg vel)
+          "/> 
+ 
+
+</launch>

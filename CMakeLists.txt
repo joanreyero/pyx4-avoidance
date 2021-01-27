@@ -57,6 +57,7 @@ add_message_files(
   activation.msg
   avoidancedecision.msg
   avoidancedirection.msg
+  avoidancedata.msg
 )
 
 ## Generate services in the 'srv' folder
