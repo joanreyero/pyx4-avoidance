@@ -87,12 +87,12 @@ class OpticFlowROS():
       self.target_vel = target_vel
 
       self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, min_init=5, min_decisions=2),
-         C45: DecisionMaker(self.target_vel, min_decisions=2,
-                            min_gradient_constant=0.02, maxlen='2*', 
+         C0: DecisionMaker(self.target_vel, min_decisions=2),
+         C45: DecisionMaker(self.target_vel, min_decisions=1,
+                            min_gradient_constant=0.03, maxlen='2*', 
                             check_outliers=False),
-         CN45: DecisionMaker(self.target_vel, min_decisions=2, 
-                             min_gradient_constant=0.02, maxlen='2*',
+         CN45: DecisionMaker(self.target_vel, min_decisions=1, 
+                             min_gradient_constant=0.03, maxlen='2*',
                              check_outliers=False),
       }
             
@@ -118,9 +118,10 @@ class OpticFlowROS():
          CN45: deque([], maxlen=5),
       }
 
-      self.side_activations = {
-         C45: deque([], maxlen=5),
-         CN45: deque([], maxlen=5),
+      self.activations = {
+         C0: deque([], maxlen=10),
+         C45: deque([], maxlen=10),
+         CN45: deque([], maxlen=10),
       }
 
    def _init_data_collection(self, data_collection):
@@ -355,20 +356,22 @@ class OpticFlowROS():
    def avoidance_step(self, cam, flow):
       
       activation = get_activation(flow, self.matched_filters[cam])
+      self.activations[cam].append(activation)
+   
       self.publish_activation(activation, cam)
 
       if self.decision_makers[cam].started:
-         decision = self.decision_makers[cam].step(activation, report_cam=C45)
+         decision = self.decision_makers[cam].step(self.activations[cam], activation, report_cam=C0)
          self.publish_decision(decision, cam)
          
          if decision:
             if cam == C0:
                dir = get_direction(self.side_decisions[C45], 
                                    self.side_decisions[CN45],
-                                   self.side_activations[C45],
-                                   self.side_activations[CN45],
+                                   self.activations[C45],
+                                   self.activations[CN45],
                                    screen=True)
-               
+
                # This will be catched by the ROS node that will make the robot turn
                self.publish_direction(dir)
                # Turn off detection while turning
@@ -379,7 +382,6 @@ class OpticFlowROS():
 
          if cam != C0:
             self.side_decisions[cam].append(decision)
-            self.side_activations[cam].append(activation)
             
       return activation
        

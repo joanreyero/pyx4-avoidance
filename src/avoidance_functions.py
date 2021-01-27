@@ -15,15 +15,15 @@ def get_activation(flow, mf):
         float: activation
     """
 
-    return np.sum(np.sum(flow * mf, axis=2)) / flow.size
+    return abs(np.sum(np.sum(flow * mf, axis=2)) / flow.size)
 
 
 def get_direction(left, right, left_act, right_act, screen=False):
     dir = BACK
     num_left, num_right = sum(left), sum(right)
-    
-    left_act = list(left_act)[2:]
-    right_act = list(right_act)[2:]
+
+    left_act = list(left_act)[-3:]
+    right_act = list(right_act)[-3:]
     if num_left == 0 and num_right > 0:
         dir = LEFT
     elif num_right == 0 and num_left > 0:
