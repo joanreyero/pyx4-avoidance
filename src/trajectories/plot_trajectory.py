@@ -57,7 +57,7 @@ def plot_trajectory(marker, fname_world):
     obstacles = read_world(fname_world)
     fig, ax = plt.subplots(figsize=(8, 8))
     xs, ys = [], []
-    c = 0.65
+    c = 1.2
     
     for obstacle in obstacles:
         xs.append(float(obstacle[X]))
@@ -72,18 +72,23 @@ def plot_trajectory(marker, fname_world):
     # Trajectories
     trajectories = read_arrays(marker)
     xs, ys = [], []
+    labeled = []
     for trajectory in trajectories:
         xs = trajectory['points'][:, 0]
         ys = -1. * trajectory['points'][:, 1]
         label = trajectory['vel']
-        ax.plot(ys, xs, color=COLORS[label], label=label, alpha=1)
+        if label not in labeled:
+            labeled.append(label)
+            ax.plot(ys, xs, color=COLORS[label], label=label, alpha=1)
+        else:
+            ax.plot(ys, xs, color=COLORS[label], alpha=1)
     ax.legend()
-    ax.set_xlim(-20, 40)
-    ax.set_ylim(10, 70)
+    ax.set_xlim(-10, 10)
+    ax.set_ylim(5, 25)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig('figs/' + str(marker) + '-trajectories-' + fname_world + '.pdf')
 
 
 
 
-plot_trajectory(0, 'circuit-trees')
+plot_trajectory(1, 'trees-7m.world')
