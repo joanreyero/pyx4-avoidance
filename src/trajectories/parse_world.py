@@ -4,7 +4,6 @@ import csv
 from trajectory_vars import *
 
 
-root = ET.parse('example.sdf').getroot()
 
 
 def parse_world(path, fname):
@@ -12,6 +11,7 @@ def parse_world(path, fname):
     with open(os.path.join('csv/', fname + '.csv'), 'w') as file:
         writer = csv.writer(file)
         writer.writerow([NAME, SIZE, X, Y])
+        root = ET.parse(os.path.join(path, fname)).getroot()
         for obstacle in OBSTACLES:
             for child in root.findall('world/state/model'):
                 if obstacle[NAME] in child.attrib[NAME]:

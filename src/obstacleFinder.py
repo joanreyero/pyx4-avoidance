@@ -42,7 +42,7 @@ class ActivationDecisionMaker(object):
 
         self.started = False
 
-        self.min_gradient = self.min_gradient_constant #* (1 + (self.vel - 1))
+        self.min_gradient = self.min_gradient_constant * (1 + (self.vel - 1))
 
     def reset(self):
         self.setup()
