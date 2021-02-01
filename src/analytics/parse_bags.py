@@ -26,9 +26,7 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
 
     complete_path = join(path, bags_subdir)
     files = find_all_files(path=complete_path)
-    df_dict_templ = {ID: [], VEL: [], ACT: [], DIST: []}
-    df_dict = df_dict_templ.copy()
-    
+    df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
     for f in files:
         bag = rosbag.Bag(f)
         filename = f[f.rfind('/') + 1 : f.find('.')] + '.csv'
@@ -43,8 +41,11 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
             df = pd.DataFrame(data=df_dict)
             df.to_csv(save_path)
             
-            df_dict = df_dict_templ.copy()
-            
+            for key, _ in df_dict.iteritems():
+                df_dict[key] = []
+
+
+
 
 if __name__ == '__main__':
     import argparse
