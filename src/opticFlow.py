@@ -78,7 +78,7 @@ class OpticFlow(object):
                 None,  # in python 3 this isn't required
                 pyr_scale=0.5,
                 levels=3,
-                winsize=15,
+                winsize=30,
                 iterations=3,
                 poly_n=5,
                 poly_sigma=1.1,

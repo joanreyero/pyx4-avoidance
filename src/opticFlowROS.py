@@ -15,9 +15,8 @@ from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from pyx4_avoidance.msg import avoidancedirection as AvoidanceDirectionMsg
-
 from pyx4_avoidance.msg import avoidancedata as AvoidanceDataMsg
-
+import plotter_flow
 from camera_labels import *
 from camera import Camera
 import rospy
@@ -135,7 +134,7 @@ class OpticFlowROS():
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
          #self.distance = 30.13
-         self.distance = 19
+         self.distance = 25
          self.current_distance = self.distance
 
    def publishers(self):
@@ -193,9 +192,11 @@ class OpticFlowROS():
          vel=0.0,
          distance=0.0,
          activation_0=[],
-         activation_45=[],
-         activation_n45=[]
+         #activation_45=[],
+         #activation_n45=[]
       )
+
+      self.draw_publisher = self.image_pub = rospy.Publisher(self.node_name + '/optic_flow_draw', Image)
    
    
    def subscribers(self, wait_for_imtopic_s):
@@ -360,11 +361,10 @@ class OpticFlowROS():
 
    def publish_data(self):
       if self.start_data_collection:
-         self.avoidance_data_msg.vel=self.target_vel
+         self.avoidance_data_msg.vel=float(self.target_vel)
          self.avoidance_data_msg.distance=self.current_distance
          self.avoidance_data_msg.activation_0=list(self.activations[C0])
-         self.avoidance_data_msg.activation_45=list(self.activations[C45])
-         self.avoidance_data_msg.activation_n45=list(self.activations[CN45])
+         print(self.avoidance_data_msg)
          self.avoidance_data_publisher.publish(self.avoidance_data_msg)
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
@@ -382,9 +382,20 @@ class OpticFlowROS():
       self.decision_makers[C45].start()
       self.decision_makers[CN45].start()
 
+   def projection(self, vec):
+      u = vec[:2]
+      v = vec[2:]
+      return (np.dot(u, v) / np.dot(v, v)) * v
+
+   def get_activation_new(self, cam, flow):
+      proj = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
+      return np.linalg.norm(proj)
+      
+
    def avoidance_step(self, cam, flow):
-      activation = get_activation(flow, self.matched_filters[cam])
+      activation = self.get_activation_new(cam, flow)
       self.activations[cam].append(activation)
+      return activation
    
       #self.publish_activation(activation, cam)
 
@@ -410,8 +421,7 @@ class OpticFlowROS():
 
          # if cam != C0:
          #    self.side_decisions[cam].append(decision)
-            
-      return activation
+         
 
    def report(self, cam):
       to_report = [C0]
@@ -433,30 +443,35 @@ class OpticFlowROS():
        
    def main(self):
       while not rospy.is_shutdown():
-         for cam in self.cam_iter:
-            if not self.image_queues[cam].empty():
-               this_image, this_image_time = self.image_queues[cam].get()
+         cam = C0
+         if not self.image_queues[cam].empty():
+            this_image, this_image_time = self.image_queues[cam].get()
+            
+            # if we don't subtract the initial camera time 
+            # the frame difference can be 0.0 due to precision errors
+            if not self.initial_times[cam]:
+               self.initial_times[cam] = this_image_time                  
+            this_image_time = this_image_time - self.initial_times[cam]
+
+            flow = self.OF_modules[cam].step(this_image, this_image_time)
+            #self.publish_flow(flow, cam)
+            
+            if self.OF_modules[cam].initialised:
+               activation = self.avoidance_step(cam, flow)                        
+
+               # if self.data_collection and cam == C0:
+               #    rospy.loginfo('Activation: ' + str(activation))
+               #    rospy.loginfo('Distance: ' + str(self.current_distance))
+
+               draw = plotter_flow.draw_flow(flow, this_image, filter_img=self.matched_filters[cam])
                
-               # if we don't subtract the initial camera time 
-               # the frame difference can be 0.0 due to precision errors
-               if not self.initial_times[cam]:
-                  self.initial_times[cam] = this_image_time                  
-               this_image_time = this_image_time - self.initial_times[cam]
+               self.publish_data()
+            print(self.current_distance)
 
-               flow = self.OF_modules[cam].step(this_image, this_image_time)
-               #self.publish_flow(flow, cam)
-               
-               if self.OF_modules[cam].initialised:
-                  activation = self.avoidance_step(cam, flow)                        
 
-                  # if self.data_collection and cam == C0:
-                  #    rospy.loginfo('Activation: ' + str(activation))
-                  #    rospy.loginfo('Distance: ' + str(self.current_distance))
+         if self.data_collection and self.current_distance < 2:
+            os.system("rosnode kill --all")
 
-            if self.data_collection and self.current_distance < 2:
-               os.system("rosnode kill --all")
-
-         self.publish_data()
       
 if __name__ == '__main__':
    rospy.init_node(NODE_NAME, anonymous=True, log_level=rospy.DEBUG)

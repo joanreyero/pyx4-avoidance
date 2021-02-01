@@ -28,7 +28,7 @@ class AvoidanceDataMission(Pyx4_base):
                                   yaw_type='vel',
                                   yaw_setpoint=0.0,
                                   coordinate_frame='1',
-                                  timeout=30)}
+                                  timeout=300)}
     
 
 if __name__ == '__main__':
