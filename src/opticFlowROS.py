@@ -330,7 +330,7 @@ class OpticFlowROS():
          self.flow_msgs[cam].flow = flat_flow
          self.flow_publishers[cam].publish(self.flow_msgs[cam])
 
-   def publish_activation(self, activation, cam):
+   def publish_activation(self, activation, cam=C0):
       if self.OF_modules[cam].initialised:
          self.activation_msgs[cam].header.stamp = rospy.Time.now()
          self.activation_msgs[cam].activation = activation
@@ -359,13 +359,15 @@ class OpticFlowROS():
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
 
 
-   def publish_data(self):
+   def publish_data(self, publish_ind_act=False, publish_funct=np.mean):
       if self.start_data_collection:
          self.avoidance_data_msg.vel=float(self.target_vel)
          self.avoidance_data_msg.distance=self.current_distance
          self.avoidance_data_msg.activation_0=list(self.activations[C0])
-         print(self.avoidance_data_msg)
          self.avoidance_data_publisher.publish(self.avoidance_data_msg)
+         if publish_ind_act:
+            a = publish_funct(np.array(self.activations[C0]))
+            self.publish_activation(a)
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
@@ -385,11 +387,11 @@ class OpticFlowROS():
    def projection(self, vec):
       u = vec[:2]
       v = vec[2:]
-      return (np.dot(u, v) / np.dot(v, v)) * v
+      return np.linalg.norm((np.dot(u, v) / np.dot(v, v)) * v)
 
    def get_activation_new(self, cam, flow):
-      proj = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
-      return np.linalg.norm(proj)
+      a_mat = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
+      return np.sum(a_mat)
       
 
    def avoidance_step(self, cam, flow):
@@ -455,7 +457,7 @@ class OpticFlowROS():
 
             flow = self.OF_modules[cam].step(this_image, this_image_time)
             #self.publish_flow(flow, cam)
-            
+
             if self.OF_modules[cam].initialised:
                activation = self.avoidance_step(cam, flow)                        
 
@@ -464,9 +466,10 @@ class OpticFlowROS():
                #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
                draw = plotter_flow.draw_flow(flow, this_image, filter_img=self.matched_filters[cam])
-               
-               self.publish_data()
-            print(self.current_distance)
+               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               self.draw_publisher.publish(im_msg)
+               print(np.median(self.activations[cam]))
+               self.publish_data(publish_ind_act=True, publish_funct=np.median)
 
 
          if self.data_collection and self.current_distance < 2:
