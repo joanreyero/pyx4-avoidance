@@ -21,13 +21,13 @@ def draw_flow(flow, img, step=10, filter_img=None):
     x = x.astype(np.int64)
     y = y.astype(np.int64)
 
-    def f(vec):
-        u = vec[:2]
-        v = vec[2:]
-        return (np.dot(u, v)/np.dot(v, v))*v
+    # def f(vec):
+    #     u = vec[:2]
+    #     v = vec[2:]
+    #     return (np.dot(u, v)/np.dot(v, v))*v
     
-    # print flow[x, y]
-    flow = np.apply_along_axis(f, 2, np.concatenate((flow, filter_img), axis=2))
+    # # print flow[x, y]
+    # flow = np.apply_along_axis(f, 2, np.concatenate((flow, filter_img), axis=2))
     fx, fy = flow[y, x].T * 20
     lines = np.vstack([x, y, x + fx, y + fy]).T.reshape(-1, 2, 2)
     lines = np.int32(lines + 0.5)

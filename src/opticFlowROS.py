@@ -388,6 +388,7 @@ class OpticFlowROS():
       u = vec[:2]
       v = vec[2:]
       return np.linalg.norm((np.dot(u, v) / np.dot(v, v)) * v)
+      #return (np.dot(u, v) / np.dot(v, v)) * v
 
    def get_activation_new(self, cam, flow):
       a_mat = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
@@ -465,9 +466,9 @@ class OpticFlowROS():
                #    rospy.loginfo('Activation: ' + str(activation))
                #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
-               draw = plotter_flow.draw_flow(flow, this_image, filter_img=self.matched_filters[cam])
-               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               self.draw_publisher.publish(im_msg)
+               #draw = plotter_flow.draw_flow(flow, this_image)
+               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               # self.draw_publisher.publish(im_msg)
                print(np.median(self.activations[cam]))
                self.publish_data(publish_ind_act=True, publish_funct=np.median)
 
