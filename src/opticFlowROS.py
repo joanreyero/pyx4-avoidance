@@ -391,8 +391,9 @@ class OpticFlowROS():
       #return (np.dot(u, v) / np.dot(v, v)) * v
 
    def get_activation_new(self, cam, flow):
-      a_mat = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
-      return np.sum(a_mat)
+      # a_mat = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
+      # return np.sum(a_mat)
+      return np.sum(flow * self.matched_filters[cam])
       
 
    def avoidance_step(self, cam, flow):
