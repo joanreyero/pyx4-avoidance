@@ -21,6 +21,7 @@ from camera_labels import *
 from camera import Camera
 import rospy
 import sys
+from tunnel_centering_behaviour import TunnelCenteringBehaviour
 
 try:
    from queue import Queue
@@ -125,6 +126,8 @@ class OpticFlowROS():
          C45: deque([], maxlen=10),
          CN45: deque([], maxlen=10),
       }
+
+      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=5)
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -397,6 +400,7 @@ class OpticFlowROS():
       
 
    def avoidance_step(self, cam, flow):
+      print(flow.shape)
       activation = self.get_activation_new(cam, flow)
       self.activations[cam].append(activation)
       return activation
@@ -461,7 +465,7 @@ class OpticFlowROS():
             #self.publish_flow(flow, cam)
 
             if self.OF_modules[cam].initialised:
-               activation = self.avoidance_step(cam, flow)                        
+               #activation = self.avoidance_step(cam, flow)                        
 
                # if self.data_collection and cam == C0:
                #    rospy.loginfo('Activation: ' + str(activation))
@@ -470,9 +474,13 @@ class OpticFlowROS():
                #draw = plotter_flow.draw_flow(flow, this_image)
                # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
                # self.draw_publisher.publish(im_msg)
-               print(np.median(self.activations[cam]))
-               self.publish_data(publish_ind_act=True, publish_funct=np.median)
+               #print(np.median(self.activations[cam]))
+               #self.publish_data(publish_ind_act=True, publish_funct=np.median)
 
+               activations = self.tunnel_centering.step(flow)
+               print('\nActivations:')
+               for act in activations:
+                  print('    ' + str(round(act, 2)))
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")
