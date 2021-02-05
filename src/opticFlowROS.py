@@ -471,16 +471,18 @@ class OpticFlowROS():
                #    rospy.loginfo('Activation: ' + str(activation))
                #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
-               #draw = plotter_flow.draw_flow(flow, this_image)
-               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               # self.draw_publisher.publish(im_msg)
-               #print(np.median(self.activations[cam]))
-               #self.publish_data(publish_ind_act=True, publish_funct=np.median)
+               
 
                activations = self.tunnel_centering.step(flow)
-               print('\nActivations:')
-               for act in activations:
-                  print('    ' + str(round(act, 2)))
+               self.publish_flow(flow, cam)
+               
+               # print('\nActivations:')
+               # for act in activations:
+               #    print('    ' + str(round(act, 2)))
+
+               # draw = plotter_flow.draw_flow(flow, this_image, filter_img=filt)
+               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               # self.draw_publisher.publish(im_msg)
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")

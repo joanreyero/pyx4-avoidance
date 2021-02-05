@@ -5,39 +5,61 @@ import pandas as pd
 import csv
 from os.path import join, isfile
 from pyx4_avoidance.msg import avoidancedata as AvoidanceDataMsg
+from pyx4_avoidance.msg import flow as FlowMsg
+
 from analytics_labels import *
 from analytics_functions import find_all_files
 
 
-def read_bag(bag, id, dir, dic):
-    for topic, msg, t in bag.read_messages():
-        dic[ID].append(id)
-        dic[VEL].append(msg.vel)
-        dic[ACT].append(np.array(msg.activation_0))
-        dic[DIST].append(msg.distance)
+def read_bag(bag, id, dir, dic, bag_type='data'):
+    for topic, msg, t in bag.read_messages(topics=get_topic(bag_type)):
+        if bag_type == 'data':
+            dic[ID].append(id)
+            dic[VEL].append(msg.vel)
+            dic[ACT].append(np.array(msg.activation_0))
+            dic[DIST].append(msg.distance)
+        elif bag_type == 'flow':
+            dic[ID].append(id)
+            dic[FLOW].append(parse_flow(msg))
     return dic
 
 
+def get_topic(bag_type):
+    if bag_type == 'data':
+        return ('/pyx4_avoidance_node/avoidance_data',)
+    elif bag_type == 'flow':
+        return ('/pyx4_avoidance_node/optic_flow',)
+
+
+def parse_flow(data):
+    return np.reshape(np.array(data.flow), (-1, data.cols, 2))
+
+    
 def get_id(f):
     return f[:f.find('-')]
 
 
-def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True):
-
+def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True, bag_type='data'):
     complete_path = join(path, bags_subdir)
     files = find_all_files(path=complete_path)
-    df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
+    if bag_type == 'data':
+        df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
+
+    elif bag_type == 'flow':
+        df_dict = {ID: [], FLOW: []}
+        
     for f in files:
         bag = rosbag.Bag(f)
         filename = f[f.rfind('/') + 1 : f.find('.')] + '.csv'
         
         id = get_id(filename)
-        df_dict = read_bag(bag, id, dir, df_dict)
+        df_dict = read_bag(bag, id, dir, df_dict, bag_type=bag_type)
 
         if save_individually:
             csv_path = join(path, csv_subdir)
             save_path = join(csv_path, filename)
 
+            print(df_dict)
             df = pd.DataFrame(data=df_dict)
             df.to_csv(save_path)
             
@@ -54,5 +76,6 @@ if __name__ == '__main__':
     parser.add_argument('--bags_subdir', '-b', type=str, default='bags/')
     parser.add_argument('--csv_subdir', '-c', type=str, default='csv/')
     parser.add_argument('--save_individually', '-i', type=bool, default=True)
+    parser.add_argument('--bag_type', '-t', type=str, default='data')
     args = parser.parse_args()
-    get_data(args.path, bags_subdir=args.bags_subdir, csv_subdir=args.csv_subdir, save_individually=args.save_individually)
+    get_data(args.path, bags_subdir=args.bags_subdir, csv_subdir=args.csv_subdir, save_individually=args.save_individually, bag_type=args.bag_type)

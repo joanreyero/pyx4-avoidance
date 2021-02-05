@@ -15,7 +15,7 @@ def get_activation(flow, mf):
         float: activation
     """
 
-    return np.sum(flow * mf)
+    return abs(np.sum(flow * mf))
 
 
 def get_direction(left, right, left_act, right_act, screen=False):
