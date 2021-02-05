@@ -20,7 +20,8 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
             dic[DIST].append(msg.distance)
         elif bag_type == 'flow':
             dic[ID].append(id)
-            dic[FLOW].append(parse_flow(msg))
+            dic[FLOW].append(msg.flow)
+            dic[COLS].append(msg.cols)
     return dic
 
 
@@ -46,7 +47,7 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
         df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
 
     elif bag_type == 'flow':
-        df_dict = {ID: [], FLOW: []}
+        df_dict = {ID: [], FLOW: [], COLS: []}
         
     for f in files:
         bag = rosbag.Bag(f)
@@ -59,7 +60,7 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
             csv_path = join(path, csv_subdir)
             save_path = join(csv_path, filename)
 
-            print(df_dict)
+
             df = pd.DataFrame(data=df_dict)
             df.to_csv(save_path)
             
