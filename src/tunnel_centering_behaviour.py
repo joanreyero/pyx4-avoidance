@@ -45,5 +45,5 @@ class TunnelCenteringBehaviour(object):
         activations = [get_activation(flow, matched_filters[i]) 
                        for i, flow in enumerate(flows)]
 
-        return activations[2]
+        return activations[3]
         
