@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 
-def draw_flow(flow, img, step=10, filter_img=None):
+def draw_flow(flow, img, step=5, filter_img=None):
     """
 
     :param flow:

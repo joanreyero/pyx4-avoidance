@@ -480,9 +480,9 @@ class OpticFlowROS():
                # for act in activations:
                #    print('    ' + str(round(act, 2)))
 
-               # draw = plotter_flow.draw_flow(flow, this_image, filter_img=filt)
-               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               # self.draw_publisher.publish(im_msg)
+               draw = plotter_flow.draw_flow(flow, this_image)
+               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               self.draw_publisher.publish(im_msg)
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")
