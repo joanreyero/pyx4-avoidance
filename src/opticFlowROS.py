@@ -502,13 +502,13 @@ class OpticFlowROS():
                self.avoidance_step(cam, flow)
                self.publish_flow(flow, cam)
                self.publish_data()
-               activation_center = self.tunnel_centering.step(flow)
-               self.tunnel_activations[C0].append(activation_center)
+               activations_tunnel = self.tunnel_centering.step(flow)
+               self.tunnel_activations[C0].append(activations_tunnel[3])
                self.publish_data(dtype='tunnel')
                
-               # print('\nActivations:')
-               # for act in activations:
-               #    print('    ' + str(round(act, 2)))
+               print('\nActivations:')
+               for act in activations_tunnel:
+                  print('    ' + str(round(act, 2)))
 
                draw = plotter_flow.draw_flow(flow, this_image)
                im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
