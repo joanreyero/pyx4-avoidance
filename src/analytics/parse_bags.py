@@ -13,7 +13,7 @@ from analytics_functions import find_all_files
 
 def read_bag(bag, id, dir, dic, bag_type='data'):
     for topic, msg, t in bag.read_messages(topics=get_topic(bag_type)):
-        if bag_type == 'data':
+        if bag_type in ('data', 'tunnel'):
             dic[ID].append(id)
             dic[VEL].append(msg.vel)
             dic[ACT].append(np.array(msg.activation_0))
@@ -28,6 +28,8 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
 def get_topic(bag_type):
     if bag_type == 'data':
         return ('/pyx4_avoidance_node/avoidance_data',)
+    elif bag_type == 'tunnel':
+        return ('/pyx4_avoidance_node/avoidance_data_tunnel',)
     elif bag_type == 'flow':
         return ('/pyx4_avoidance_node/optic_flow',)
 
@@ -43,7 +45,7 @@ def get_id(f):
 def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True, bag_type='data', name=''):
     complete_path = join(path, bags_subdir)
     files = find_all_files(path=complete_path)
-    if bag_type == 'data':
+    if bag_type in ('data', 'tunnel'):
         df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
 
     elif bag_type == 'flow':

@@ -9,7 +9,7 @@ from avoidance_functions import get_activation
 
 class TunnelCenteringBehaviour(object):
 
-    def __init__(self, camera, num_filters=3):
+    def __init__(self, camera, num_filters=5):
         self.flow = None
         self.num_filters = num_filters
         self.cam = camera
@@ -32,7 +32,7 @@ class TunnelCenteringBehaviour(object):
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
         # Function to return the filter angle for each filter
-        filter_angle = lambda i: original_fov - i * fov - (fov / 2)
+        filter_angle = lambda i: original_fov + i * fov + (fov / 2)
         print(fov, width, height)
         return [MatchedFilter(
             flow.shape[1], flow.shape[0], (fov, fov), 
@@ -45,5 +45,5 @@ class TunnelCenteringBehaviour(object):
         activations = [get_activation(flow, matched_filters[i]) 
                        for i, flow in enumerate(flows)]
 
-        return activations
+        return activations[2]
         

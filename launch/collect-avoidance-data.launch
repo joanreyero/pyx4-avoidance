@@ -85,6 +85,7 @@
           args="
           -O $(find pyx4_avoidance)/src/analytics/$(arg save).bag
           /pyx4_avoidance_node/avoidance_data
+          /pyx4_avoidance_node/avoidance_data_tunnel
           /pyx4_avoidance_node/optic_flow
          " if="$(eval save != false)"/>                  
     

@@ -127,6 +127,10 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
+      self.tunnel_activations = {
+         C0: deque([], maxlen=10),
+      }
+
       self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=5)
 
    def _init_data_collection(self, data_collection):
@@ -192,6 +196,19 @@ class OpticFlowROS():
          queue_size=10
       )
       self.avoidance_data_msg = AvoidanceDataMsg(
+         vel=0.0,
+         distance=0.0,
+         activation_0=[],
+         #activation_45=[],
+         #activation_n45=[]
+      )
+
+      self.avoidance_data_tunnel_publisher = rospy.Publisher(
+         self.node_name + '/avoidance_data_tunnel', 
+         AvoidanceDataMsg,
+         queue_size=10
+      )
+      self.avoidance_data_tunnel_msg = AvoidanceDataMsg(
          vel=0.0,
          distance=0.0,
          activation_0=[],
@@ -362,15 +379,25 @@ class OpticFlowROS():
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
 
 
-   def publish_data(self, publish_ind_act=False, publish_funct=np.mean):
+   def publish_data(self, publish_ind_act=False, publish_funct=np.mean, dtype=''):
       if self.start_data_collection:
-         self.avoidance_data_msg.vel=float(self.target_vel)
-         self.avoidance_data_msg.distance=self.current_distance
-         self.avoidance_data_msg.activation_0=list(self.activations[C0])
-         self.avoidance_data_publisher.publish(self.avoidance_data_msg)
-         if publish_ind_act:
-            a = publish_funct(np.array(self.activations[C0]))
-            self.publish_activation(a)
+         if dtype == 'tunnel':
+            self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
+            self.avoidance_data_tunnel_msg.distance=self.current_distance
+            self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[C0])
+            self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
+            if publish_ind_act:
+               a = publish_funct(np.array(self.tunnel_activations[C0]))
+               self.publish_activation(a)
+         else: 
+            self.avoidance_data_msg.vel=float(self.target_vel)
+            self.avoidance_data_msg.distance=self.current_distance
+            self.avoidance_data_msg.activation_0=list(self.activations[C0])
+            self.avoidance_data_publisher.publish(self.avoidance_data_msg)
+            if publish_ind_act:
+               a = publish_funct(np.array(self.activations[C0]))
+               self.publish_activation(a)
+            
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
       return MatchedFilter(
@@ -473,9 +500,12 @@ class OpticFlowROS():
 
                
                self.avoidance_step(cam, flow)
-               #activations = self.tunnel_centering.step(flow)
                self.publish_flow(flow, cam)
                self.publish_data()
+               activation_center = self.tunnel_centering.step(flow)
+               self.tunnel_activations[C0].append(activation_center)
+               self.publish_data(dtype='tunnel')
+               
                # print('\nActivations:')
                # for act in activations:
                #    print('    ' + str(round(act, 2)))
