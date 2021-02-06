@@ -472,10 +472,10 @@ class OpticFlowROS():
                #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
                
-
-               activations = self.tunnel_centering.step(flow)
+               self.avoidance_step(cam, flow)
+               #activations = self.tunnel_centering.step(flow)
                self.publish_flow(flow, cam)
-               
+               self.publish_data()
                # print('\nActivations:')
                # for act in activations:
                #    print('    ' + str(round(act, 2)))

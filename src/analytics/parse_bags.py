@@ -40,7 +40,7 @@ def get_id(f):
     return f[:f.find('-')]
 
 
-def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True, bag_type='data'):
+def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True, bag_type='data', name=''):
     complete_path = join(path, bags_subdir)
     files = find_all_files(path=complete_path)
     if bag_type == 'data':
@@ -51,7 +51,11 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
         
     for f in files:
         bag = rosbag.Bag(f)
-        filename = f[f.rfind('/') + 1 : f.find('.')] + '.csv'
+        if name:
+            filename = f[f.rfind('/') + 1 : f.find('.')] + '-' + name + '.csv'
+        else: 
+            filename = f[f.rfind('/') + 1 : f.find('.')] + '.csv'
+            
         
         id = get_id(filename)
         df_dict = read_bag(bag, id, dir, df_dict, bag_type=bag_type)
@@ -78,5 +82,6 @@ if __name__ == '__main__':
     parser.add_argument('--csv_subdir', '-c', type=str, default='csv/')
     parser.add_argument('--save_individually', '-i', type=bool, default=True)
     parser.add_argument('--bag_type', '-t', type=str, default='data')
+    parser.add_argument('--name', '-n', type=str, default='')
     args = parser.parse_args()
-    get_data(args.path, bags_subdir=args.bags_subdir, csv_subdir=args.csv_subdir, save_individually=args.save_individually, bag_type=args.bag_type)
+    get_data(args.path, bags_subdir=args.bags_subdir, csv_subdir=args.csv_subdir, save_individually=args.save_individually, bag_type=args.bag_type, name=args.name)
