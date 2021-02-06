@@ -32,7 +32,7 @@ class TunnelCenteringBehaviour(object):
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
         # Function to return the filter angle for each filter
-        filter_angle = lambda i: original_fov + i * fov + (fov / 2)
+        filter_angle = lambda i: original_fov - i * fov - (fov / 2)
         print(fov, width, height)
         return [MatchedFilter(
             flow.shape[1], flow.shape[0], (fov, fov), 
