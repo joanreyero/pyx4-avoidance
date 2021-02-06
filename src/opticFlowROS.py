@@ -503,7 +503,7 @@ class OpticFlowROS():
                self.publish_flow(flow, cam)
                self.publish_data()
                activations_tunnel = self.tunnel_centering.step(flow)
-               self.tunnel_activations[C0].append(activations_tunnel[3])
+               self.tunnel_activations[C0].append(activations_tunnel[4])
                self.publish_data(dtype='tunnel')
                
                print('\nActivations:')
