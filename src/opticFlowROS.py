@@ -15,7 +15,7 @@ from pyx4_avoidance.msg import activation as ActivationMsg
 from pyx4.msg import pyx4_state
 from pyx4_avoidance.msg import avoidancedecision as DecisionMsg
 from pyx4_avoidance.msg import avoidancedirection as AvoidanceDirectionMsg
-from pyx4_avoidance.msg import avoidancedata as AvoidanceDataMsg
+from pyx4_avoidance.msg import avoidancetunneldata as AvoidanceTunnelDataMsg
 import plotter_flow
 from camera_labels import *
 from camera import Camera
@@ -127,9 +127,7 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
-      self.tunnel_activations = {
-         C0: deque([], maxlen=10),
-      }
+      self.tunnel_activations = [deque([], maxlen=10) for _ in range(5)]
 
       self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=5)
 
@@ -192,10 +190,10 @@ class OpticFlowROS():
 
       self.avoidance_data_publisher = rospy.Publisher(
          self.node_name + '/avoidance_data', 
-         AvoidanceDataMsg, 
+         AvoidanceTunnelDataMsg, 
          queue_size=10
       )
-      self.avoidance_data_msg = AvoidanceDataMsg(
+      self.avoidance_data_msg = AvoidanceTunnelDataMsg(
          vel=0.0,
          distance=0.0,
          activation_0=[],
@@ -205,15 +203,19 @@ class OpticFlowROS():
 
       self.avoidance_data_tunnel_publisher = rospy.Publisher(
          self.node_name + '/avoidance_data_tunnel', 
-         AvoidanceDataMsg,
+         AvoidanceTunnelDataMsg,
          queue_size=10
       )
-      self.avoidance_data_tunnel_msg = AvoidanceDataMsg(
+      
+      self.avoidance_data_tunnel_msg = AvoidanceTunnelDataMsg(
          vel=0.0,
          distance=0.0,
          activation_0=[],
-         #activation_45=[],
-         #activation_n45=[]
+         activation_1=[],
+         activation_2=[],
+         activation_3=[],
+         activation_4=[],
+         
       )
 
       self.draw_publisher = self.image_pub = rospy.Publisher(self.node_name + '/optic_flow_draw', Image)
@@ -379,24 +381,16 @@ class OpticFlowROS():
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
 
 
-   def publish_data(self, publish_ind_act=False, publish_funct=np.mean, dtype=''):
+   def publish_tunnel_data(self, publish_ind_act=False, publish_funct=np.mean):
       if self.start_data_collection:
-         if dtype == 'tunnel':
-            self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
-            self.avoidance_data_tunnel_msg.distance=self.current_distance
-            self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[C0])
-            self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
-            if publish_ind_act:
-               a = publish_funct(np.array(self.tunnel_activations[C0]))
-               self.publish_activation(a)
-         else: 
-            self.avoidance_data_msg.vel=float(self.target_vel)
-            self.avoidance_data_msg.distance=self.current_distance
-            self.avoidance_data_msg.activation_0=list(self.activations[C0])
-            self.avoidance_data_publisher.publish(self.avoidance_data_msg)
-            if publish_ind_act:
-               a = publish_funct(np.array(self.activations[C0]))
-               self.publish_activation(a)
+         self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
+         self.avoidance_data_tunnel_msg.distance=self.current_distance
+         self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
+         self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
+         self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
+         self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
+         self.avoidance_data_tunnel_msg.activation_4=list(self.tunnel_activations[4])
+         self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
    def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
@@ -499,20 +493,20 @@ class OpticFlowROS():
                #    rospy.loginfo('Distance: ' + str(self.current_distance))
 
                
-               self.avoidance_step(cam, flow)
-               self.publish_flow(flow, cam)
-               self.publish_data()
-               activations_tunnel = self.tunnel_centering.step(flow)
-               self.tunnel_activations[C0].append(activations_tunnel[4])
-               self.publish_data(dtype='tunnel')
-               
-               print('\nActivations:')
-               for act in activations_tunnel:
-                  print('    ' + str(round(act, 2)))
+               # self.avoidance_step(cam, flow)
+               # self.publish_flow(flow, cam)
+               # self.publish_data()
+               activations = self.tunnel_centering.step(flow)
+               for i, a in enumerate(activations):
+                  self.tunnel_activations[i].append(a)
+                  
+               self.publish_tunnel_data()
+            
 
-               draw = plotter_flow.draw_flow(flow, this_image)
-               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               self.draw_publisher.publish(im_msg)
+
+               # draw = plotter_flow.draw_flow(flow, this_image)
+               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               # self.draw_publisher.publish(im_msg)
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")
