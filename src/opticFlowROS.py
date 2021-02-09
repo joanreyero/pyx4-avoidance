@@ -139,7 +139,7 @@ class OpticFlowROS():
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
          #self.distance = 30.13
-         self.distance = 25
+         self.distance = 40
          self.current_distance = self.distance
 
    def publishers(self):

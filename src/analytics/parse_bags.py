@@ -13,7 +13,7 @@ from analytics_functions import find_all_files
 
 def read_bag(bag, id, dir, dic, bag_type='data'):
     for topic, msg, t in bag.read_messages(topics=get_topic(bag_type)):
-        if bag_type in ('data', 'tunnel'):
+        if bag_type == 'data':
             dic[ID].append(id)
             dic[VEL].append(msg.vel)
             dic[ACT].append(np.array(msg.activation_0))
@@ -22,6 +22,15 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
             dic[ID].append(id)
             dic[FLOW].append(msg.flow)
             dic[COLS].append(msg.cols)
+        elif bag_type == 'tunnel':
+            dic[ID].append(id)
+            dic[VEL].append(msg.vel)
+            dic[ACT0].append(np.array(msg.activation_0))
+            dic[ACT1].append(np.array(msg.activation_1))
+            dic[ACT2].append(np.array(msg.activation_2))
+            dic[ACT3].append(np.array(msg.activation_3))
+            dic[ACT4].append(np.array(msg.activation_4))
+            dic[DIST].append(msg.distance)
     return dic
 
 
@@ -45,8 +54,15 @@ def get_id(f):
 def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=True, bag_type='data', name=''):
     complete_path = join(path, bags_subdir)
     files = find_all_files(path=complete_path)
-    if bag_type in ('data', 'tunnel'):
+    if bag_type == 'data':
         df_dict = {ID: [], VEL: [], ACT: [], DIST: []}
+
+    elif bag_type == 'tunnel':
+        df_dict = {
+            ID: [], VEL: [], DIST: [],
+            ACT0: [], ACT1: [], ACT2: [], ACT3: [], ACT4: []
+        }
+        
 
     elif bag_type == 'flow':
         df_dict = {ID: [], FLOW: [], COLS: []}
