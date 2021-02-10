@@ -139,7 +139,7 @@ class OpticFlowROS():
          '/mavros/local_position/pose', PoseStamped, self.data_collection_cb
          )
          #self.distance = 30.13
-         self.distance = 40
+         self.distance = 25
          self.current_distance = self.distance
 
    def publishers(self):
@@ -499,9 +499,9 @@ class OpticFlowROS():
             
 
 
-               # draw = plotter_flow.draw_flow(flow, this_image)
-               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               # self.draw_publisher.publish(im_msg)
+               draw = plotter_flow.draw_flow(flow, this_image)
+               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               self.draw_publisher.publish(im_msg)
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")

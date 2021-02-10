@@ -14,15 +14,13 @@ class TunnelCenteringBehaviour(object):
         self.num_filters = num_filters
         self.cam = camera
 
-    def crop_flow(self, flow):
+    def crop_flow(self, flow, crop=0.5):
         # The height of each flow will be the same as the width
-        # height = flow.shape[1] / (self.num_filters)
-        # # The ammount to crop on the top/bottom
-        # crop = int((flow.shape[0] - height) / 2)
-        # if  2 * crop < flow.shape[0]:
-        #     # Crop vertically
-        #     flow = flow[crop:-crop, :, :]
-        # Split the array
+        height = flow.shape[1] / (self.num_filters)
+            
+        if crop:
+            flow = flow[: -int(crop * flow.shape[0]), :, :]
+            
         return np.array_split(flow, self.num_filters, axis=1)
 
     def get_matched_filters(self, flows):
