@@ -16,12 +16,12 @@ class TunnelCenteringBehaviour(object):
 
     def crop_flow(self, flow):
         # The height of each flow will be the same as the width
-        height = flow.shape[1] / (self.num_filters)
-        # The ammount to crop on the top/bottom
-        crop = int((flow.shape[0] - height) / 2)
-        if  2 * crop < flow.shape[0]:
-            # Crop vertically
-            flow = flow[crop:-crop, :, :]
+        # height = flow.shape[1] / (self.num_filters)
+        # # The ammount to crop on the top/bottom
+        # crop = int((flow.shape[0] - height) / 2)
+        # if  2 * crop < flow.shape[0]:
+        #     # Crop vertically
+        #     flow = flow[crop:-crop, :, :]
         # Split the array
         return np.array_split(flow, self.num_filters, axis=1)
 
@@ -31,15 +31,14 @@ class TunnelCenteringBehaviour(object):
         # FOV of a single filter
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
-        # Function to return the filter angle for each filter
-        filter_angle = lambda i: original_fov - i * fov - (fov / 2)
-        print(fov, width, height)
+        filter_angles = [30, 0, -30]
         return [MatchedFilter(
             flow.shape[1], flow.shape[0], (fov, fov), 
-            axis=[0, 0, filter_angle(i)]
+            axis=[0, 0, filter_angles[i]]
             ).matched_filter for i, flow in enumerate(flows)]
 
     def step(self, flow):
+        print(flow.shape)
         flows = self.crop_flow(flow)
         matched_filters = self.get_matched_filters(flows)
         activations = [get_activation(flow, matched_filters[i]) 

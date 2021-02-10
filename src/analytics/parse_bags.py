@@ -28,8 +28,6 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
             dic[ACT0].append(np.array(msg.activation_0))
             dic[ACT1].append(np.array(msg.activation_1))
             dic[ACT2].append(np.array(msg.activation_2))
-            dic[ACT3].append(np.array(msg.activation_3))
-            dic[ACT4].append(np.array(msg.activation_4))
             dic[DIST].append(msg.distance)
     return dic
 
@@ -60,7 +58,7 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
     elif bag_type == 'tunnel':
         df_dict = {
             ID: [], VEL: [], DIST: [],
-            ACT0: [], ACT1: [], ACT2: [], ACT3: [], ACT4: []
+            ACT0: [], ACT1: [], ACT2: []
         }
         
 

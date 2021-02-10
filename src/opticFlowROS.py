@@ -127,9 +127,9 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
-      self.tunnel_activations = [deque([], maxlen=10) for _ in range(5)]
+      self.tunnel_activations = [deque([], maxlen=10) for _ in range(3)]
 
-      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=5)
+      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=3)
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -213,9 +213,6 @@ class OpticFlowROS():
          activation_0=[],
          activation_1=[],
          activation_2=[],
-         activation_3=[],
-         activation_4=[],
-         
       )
 
       self.draw_publisher = self.image_pub = rospy.Publisher(self.node_name + '/optic_flow_draw', Image)
@@ -388,8 +385,6 @@ class OpticFlowROS():
          self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
          self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
          self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
-         self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
-         self.avoidance_data_tunnel_msg.activation_4=list(self.tunnel_activations[4])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
@@ -421,7 +416,6 @@ class OpticFlowROS():
       
 
    def avoidance_step(self, cam, flow):
-      print(flow.shape)
       activation = self.get_activation_new(cam, flow)
       self.activations[cam].append(activation)
       return activation
@@ -481,11 +475,12 @@ class OpticFlowROS():
             if not self.initial_times[cam]:
                self.initial_times[cam] = this_image_time                  
             this_image_time = this_image_time - self.initial_times[cam]
-
+            
             flow = self.OF_modules[cam].step(this_image, this_image_time)
             #self.publish_flow(flow, cam)
 
             if self.OF_modules[cam].initialised:
+               print(flow.shape)
                #activation = self.avoidance_step(cam, flow)                        
 
                # if self.data_collection and cam == C0:

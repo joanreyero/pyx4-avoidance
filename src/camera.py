@@ -8,6 +8,7 @@ class Camera():
     def __init__(self, cam_info=None):
         self.h = cam_info.height
         self.w = cam_info.width
+
         self.fovx_deg = 120
         self.fovy_deg = 60
         self.fovx = np.deg2rad(self.fovx_deg)
