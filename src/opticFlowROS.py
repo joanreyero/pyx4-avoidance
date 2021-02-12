@@ -129,7 +129,7 @@ class OpticFlowROS():
 
       self.tunnel_activations = [deque([], maxlen=10) for _ in range(3)]
 
-      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=3)
+      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=3, dual=True)
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
