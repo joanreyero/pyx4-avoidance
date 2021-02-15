@@ -30,7 +30,7 @@ class TunnelCenteringBehaviour(object):
         # FOV of a single filter
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
-        filter_angles = [30, 0, -30]
+        filter_angles = [-45, -15, 15, 45]
 
         if self.dual:
             offset = 10

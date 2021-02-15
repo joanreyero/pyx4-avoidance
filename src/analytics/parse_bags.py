@@ -29,13 +29,21 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
             dic[ACT1].append(np.array(msg.activation_1))
             dic[ACT2].append(np.array(msg.activation_2))
             dic[DIST].append(msg.distance)
+        elif bag_type == 'tunnel-4':
+            dic[ID].append(id)
+            dic[VEL].append(msg.vel)
+            dic[ACT0].append(np.array(msg.activation_0))
+            dic[ACT1].append(np.array(msg.activation_1))
+            dic[ACT2].append(np.array(msg.activation_2))
+            dic[ACT3].append(np.array(msg.activation_3))
+            dic[DIST].append(msg.distance)
     return dic
 
 
 def get_topic(bag_type):
     if bag_type == 'data':
         return ('/pyx4_avoidance_node/avoidance_data',)
-    elif bag_type == 'tunnel':
+    elif bag_type in ('tunnel', 'tunnel-4'):
         return ('/pyx4_avoidance_node/avoidance_data_tunnel',)
     elif bag_type == 'flow':
         return ('/pyx4_avoidance_node/optic_flow',)
@@ -60,6 +68,12 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
             ID: [], VEL: [], DIST: [],
             ACT0: [], ACT1: [], ACT2: []
         }
+
+    elif bag_type == 'tunnel-4':
+        df_dict = {
+            ID: [], VEL: [], DIST: [],
+            ACT0: [], ACT1: [], ACT2: [], ACT3: []
+        }
         
 
     elif bag_type == 'flow':
@@ -80,7 +94,7 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
             csv_path = join(path, csv_subdir)
             save_path = join(csv_path, filename)
 
-
+            
             df = pd.DataFrame(data=df_dict)
             df.to_csv(save_path)
             

@@ -127,9 +127,9 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
-      self.tunnel_activations = [deque([], maxlen=10) for _ in range(3)]
+      self.tunnel_activations = [deque([], maxlen=10) for _ in range(4)]
 
-      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=3, dual=True)
+      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=4, dual=False)
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -385,6 +385,7 @@ class OpticFlowROS():
          self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
          self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
          self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
+         self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
@@ -494,6 +495,7 @@ class OpticFlowROS():
                activations = self.tunnel_centering.step(flow)
                for i, a in enumerate(activations):
                   self.tunnel_activations[i].append(a)
+                  print('Activation ' + str(i) + ': ' + str(round(sum(self.tunnel_activations[i]), 2)))
                   
                self.publish_tunnel_data()
             
