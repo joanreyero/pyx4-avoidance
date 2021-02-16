@@ -37,13 +37,23 @@ def read_bag(bag, id, dir, dic, bag_type='data'):
             dic[ACT2].append(np.array(msg.activation_2))
             dic[ACT3].append(np.array(msg.activation_3))
             dic[DIST].append(msg.distance)
+
+        elif bag_type == 'tunnel-5':
+            dic[ID].append(id)
+            dic[VEL].append(msg.vel)
+            dic[ACT0].append(np.array(msg.activation_0))
+            dic[ACT1].append(np.array(msg.activation_1))
+            dic[ACT2].append(np.array(msg.activation_2))
+            dic[ACT3].append(np.array(msg.activation_3))
+            dic[ACT4].append(np.array(msg.activation_4))
+            dic[DIST].append(msg.distance)
     return dic
 
 
 def get_topic(bag_type):
     if bag_type == 'data':
         return ('/pyx4_avoidance_node/avoidance_data',)
-    elif bag_type in ('tunnel', 'tunnel-4'):
+    elif bag_type in ('tunnel', 'tunnel-4', 'tunnel-5'):
         return ('/pyx4_avoidance_node/avoidance_data_tunnel',)
     elif bag_type == 'flow':
         return ('/pyx4_avoidance_node/optic_flow',)
@@ -73,6 +83,12 @@ def get_data(path, bags_subdir='bags/', csv_subdir='csv/', save_individually=Tru
         df_dict = {
             ID: [], VEL: [], DIST: [],
             ACT0: [], ACT1: [], ACT2: [], ACT3: []
+        }
+
+    elif bag_type == 'tunnel-5':
+        df_dict = {
+            ID: [], VEL: [], DIST: [],
+            ACT0: [], ACT1: [], ACT2: [], ACT3: [], ACT4: []
         }
         
 

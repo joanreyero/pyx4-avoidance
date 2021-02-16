@@ -30,7 +30,7 @@ class TunnelCenteringBehaviour(object):
         # FOV of a single filter
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
-        filter_angles = [-45, -15, 15, 45]
+        filter_angles = [-48, -24, 0, 24, 48]
 
         if self.dual:
             offset = 10
@@ -52,7 +52,6 @@ class TunnelCenteringBehaviour(object):
             ).matched_filter for i, flow in enumerate(flows)]
 
     def step(self, flow):
-        print(flow.shape)
         flows = self.crop_flow(flow)
         matched_filters = self.get_matched_filters(flows)
         if self.dual:
