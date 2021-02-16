@@ -20,8 +20,12 @@ class TunnelCenteringBehaviour(object):
         height = flow.shape[1] / (self.num_filters)
             
         if crop:
-            flow = flow[: -int(crop * flow.shape[0]), :, :]
-            
+            amount = int(crop * flow.shape[0] / 2)
+            flow = flow[amount:-amount, :, :]
+
+        if self.num_filters == 1:
+            return [flow,]
+        
         return np.array_split(flow, self.num_filters, axis=1)
 
     def get_matched_filters(self, flows):
@@ -30,7 +34,9 @@ class TunnelCenteringBehaviour(object):
         # FOV of a single filter
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
-        filter_angles = [-48, -24, 0, 24, 48]
+        
+        filter_angles = [-45, -15, 15, 45]
+        #filter_angles = [-48, -24, 0, 24, 48]
 
         if self.dual:
             offset = 10
@@ -52,7 +58,7 @@ class TunnelCenteringBehaviour(object):
             ).matched_filter for i, flow in enumerate(flows)]
 
     def step(self, flow):
-        flows = self.crop_flow(flow)
+        flows = self.crop_flow(flow, crop=False)
         matched_filters = self.get_matched_filters(flows)
         if self.dual:
             activations = [np.mean([

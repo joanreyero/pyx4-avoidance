@@ -127,9 +127,9 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
-      self.tunnel_activations = [deque([], maxlen=10) for _ in range(5)]
+      self.tunnel_activations = [deque([], maxlen=10) for _ in range(1)]
 
-      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=5, dual=False)
+      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=1, dual=False)
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -383,10 +383,10 @@ class OpticFlowROS():
          self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
          self.avoidance_data_tunnel_msg.distance=self.current_distance
          self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
-         self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
-         self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
-         self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
-         self.avoidance_data_tunnel_msg.activation_4=list(self.tunnel_activations[4])
+#          self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
+#          self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
+#          self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
+# #         self.avoidance_data_tunnel_msg.activation_4=list(self.tunnel_activations[4])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
@@ -502,9 +502,9 @@ class OpticFlowROS():
             
 
 
-               # draw = plotter_flow.draw_flow(flow, this_image)
-               # im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
-               # self.draw_publisher.publish(im_msg)
+               draw = plotter_flow.draw_flow(flow, this_image)
+               im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
+               self.draw_publisher.publish(im_msg)
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")
