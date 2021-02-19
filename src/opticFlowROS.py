@@ -127,8 +127,10 @@ class OpticFlowROS():
          CN45: deque([], maxlen=10),
       }
 
-      self.tunnel_activations = [deque([], maxlen=10) for _ in range(1)]
 
+      self.cameras = [C45, C0, CN45]
+      self.tunnel_activations = [deque([], maxlen=10) for _ in range(3)]
+      self.last_flows = {C0: [], C45: [], CN45: []}
       self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=1, dual=False)
 
    def _init_data_collection(self, data_collection):
@@ -383,10 +385,8 @@ class OpticFlowROS():
          self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
          self.avoidance_data_tunnel_msg.distance=self.current_distance
          self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
-#          self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
-#          self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
-#          self.avoidance_data_tunnel_msg.activation_3=list(self.tunnel_activations[3])
-# #         self.avoidance_data_tunnel_msg.activation_4=list(self.tunnel_activations[4])
+         self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
+         self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
@@ -465,11 +465,18 @@ class OpticFlowROS():
          print('Median activations:')
          print(np.median(self.activations[cam]))
          print('')
-       
-   def main(self):
-      while not rospy.is_shutdown():
-         cam = C0
-         if not self.image_queues[cam].empty():
+
+   def get_flows(self, draw_image=False):
+      flows = []
+      for i, cam in enumerate(self.cameras):
+
+         if self.image_queues[cam].empty():
+            if len(self.last_flows[cam]) == 0:
+               return False
+            
+            flow = self.last_flows[cam]
+            
+         else:
             this_image, this_image_time = self.image_queues[cam].get()
             
             # if we don't subtract the initial camera time 
@@ -477,34 +484,39 @@ class OpticFlowROS():
             if not self.initial_times[cam]:
                self.initial_times[cam] = this_image_time                  
             this_image_time = this_image_time - self.initial_times[cam]
-            
             flow = self.OF_modules[cam].step(this_image, this_image_time)
-            #self.publish_flow(flow, cam)
 
-            if self.OF_modules[cam].initialised:
-               print(flow.shape)
-               #activation = self.avoidance_step(cam, flow)                        
+            if not self.OF_modules[cam].initialised:
+               return False
 
-               # if self.data_collection and cam == C0:
-               #    rospy.loginfo('Activation: ' + str(activation))
-               #    rospy.loginfo('Distance: ' + str(self.current_distance))
+            self.last_flows[cam] = flow
 
-               
-               # self.avoidance_step(cam, flow)
-               # self.publish_flow(flow, cam)
-               # self.publish_data()
-               activations = self.tunnel_centering.step(flow)
-               for i, a in enumerate(activations):
-                  self.tunnel_activations[i].append(a)
-                  print('Activation ' + str(i) + ': ' + str(round(sum(self.tunnel_activations[i]), 2)))
-                  
-               self.publish_tunnel_data()
-            
-
-
+            if draw_image == i:
                draw = plotter_flow.draw_flow(flow, this_image)
                im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
                self.draw_publisher.publish(im_msg)
+
+               
+         flows.append(flow)
+      return flows
+       
+   def main(self):
+      while not rospy.is_shutdown():
+         
+         flows = self.get_flows(draw_image=2)
+            #self.publish_flow(flow, cam)
+         if flows:
+            
+            activations = self.tunnel_centering.step(flows)
+            for i, a in enumerate(activations):
+               self.tunnel_activations[i].append(a)
+               print('Activation ' + str(i) + ': ' + str(round(sum(self.tunnel_activations[i]), 2)))
+               
+            self.publish_tunnel_data()
+            
+
+
+            
 
          if self.data_collection and self.current_distance < 2:
             os.system("rosnode kill --all")

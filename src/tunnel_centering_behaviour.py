@@ -35,7 +35,7 @@ class TunnelCenteringBehaviour(object):
         original_fov = self.cam.fovx_deg
         fov = int(original_fov / self.num_filters)
         
-        filter_angles = [-45, -15, 15, 45]
+        filter_angles = [-45, 0, 45]
         #filter_angles = [-48, -24, 0, 24, 48]
 
         if self.dual:
@@ -57,8 +57,7 @@ class TunnelCenteringBehaviour(object):
             axis=[0, 0, filter_angles[i]]
             ).matched_filter for i, flow in enumerate(flows)]
 
-    def step(self, flow):
-        flows = self.crop_flow(flow, crop=False)
+    def step(self, flows):
         matched_filters = self.get_matched_filters(flows)
         if self.dual:
             activations = [np.mean([
