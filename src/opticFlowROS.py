@@ -21,7 +21,7 @@ from camera_labels import *
 from camera import Camera
 import rospy
 import sys
-from tunnel_centering_behaviour import TunnelCenteringBehaviour
+from avoidance_behaviours import TunnelCenteringBehaviour, AvoidanceBehaviour
 
 try:
    from queue import Queue
@@ -380,13 +380,13 @@ class OpticFlowROS():
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
 
 
-   def publish_tunnel_data(self, publish_ind_act=False, publish_funct=np.mean):
+   def publish_tunnel_data(self, activations):
       if self.start_data_collection:
          self.avoidance_data_tunnel_msg.vel=float(self.target_vel)
          self.avoidance_data_tunnel_msg.distance=self.current_distance
-         self.avoidance_data_tunnel_msg.activation_0=list(self.tunnel_activations[0])
-         self.avoidance_data_tunnel_msg.activation_1=list(self.tunnel_activations[1])
-         self.avoidance_data_tunnel_msg.activation_2=list(self.tunnel_activations[2])
+         self.avoidance_data_tunnel_msg.activation_0=list(activations[0])
+         self.avoidance_data_tunnel_msg.activation_1=list(activations[1])
+         self.avoidance_data_tunnel_msg.activation_2=list(activations[2])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
 
@@ -504,15 +504,11 @@ class OpticFlowROS():
       while not rospy.is_shutdown():
          
          flows = self.get_flows(draw_image=2)
-            #self.publish_flow(flow, cam)
+
          if flows:
             
-            activations = self.tunnel_centering.step(flows)
-            for i, a in enumerate(activations):
-               self.tunnel_activations[i].append(a)
-               print('Activation ' + str(i) + ': ' + str(round(sum(self.tunnel_activations[i]), 2)))
-               
-            self.publish_tunnel_data()
+            activations, decisions = self.tunnel_centering.step(flows)               
+            self.publish_tunnel_data(activations)
             
 
 
