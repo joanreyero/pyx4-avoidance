@@ -1,2 +1,3 @@
 Header header
-string direction
+float32 angle
+string type

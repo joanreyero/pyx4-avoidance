@@ -14,9 +14,9 @@ def pol2cart(rho, phi):
 
 def make_obstacle(dist, dir, last, print_p=True):
     if dir == LEFT:
-        angle = -45
+        angle = -60
     elif dir == RIGHT:
-        angle = 45
+        angle = 60
     else:
         angle = 180
 

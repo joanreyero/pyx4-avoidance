@@ -17,19 +17,8 @@ class AvoidanceBehaviour(object):
 
         self.activations = [deque([], maxlen=10) for _ in range(3)]
 
-    # def crop_flow(self, flow, crop=0.5):
-    #     # The height of each flow will be the same as the width
-    #     height = flow.shape[1] / (self.num_filters)
+        self._start = False
             
-    #     if crop:
-    #         amount = int(crop * flow.shape[0] / 2)
-    #         flow = flow[amount:-amount, :, :]
-
-    #     if self.num_filters == 1:
-    #         return [flow,]
-        
-    #     return np.array_split(flow, self.num_filters, axis=1)
-
     def get_matched_filters(self, flows):
         # Needed for the MF functions
         height, width, _ = flows[0].shape
@@ -77,15 +66,30 @@ class AvoidanceBehaviour(object):
             
 
     def _clean_activations(self, normalise, threshold):
-            activations = [np.median(acts) / normalise[i] 
-                           for i, acts in enumerate(self.activations)]
-            return list(map(lambda x: x if x >= threshold else 0,
-                            activations))
+        activations = [np.median(acts) / normalise[i] 
+                        for i, acts in enumerate(self.activations)]
+        return list(map(lambda x: x if x >= threshold else 0,
+                        activations))
+
+    def reset(self):
+        #self._reset = 0
+        self.activations = [deque([0,] * 10, maxlen=10) for _ in range(3)]
+
+    def start(self):
+        self._start = True
+
+    def step(self, flows):
+        if self._start:
+            self._add_new_activations(flows)
+            direction = self._get_direction()
+            return self.activations, direction
+        return None, None
+ 
 
 
 class TunnelCenteringBehaviour(AvoidanceBehaviour):
 
-    def __init__(self, camera, threshold=1.6, normalise=[3000, 400, 3800], 
+    def __init__(self, camera, threshold=1.6, normalise=[5000, 90, 5800], 
                  num_filters=5, dual=False):
         super(TunnelCenteringBehaviour, self).__init__(
             camera, num_filters=num_filters, dual=dual
@@ -94,24 +98,59 @@ class TunnelCenteringBehaviour(AvoidanceBehaviour):
         self.threshold = threshold
         self.normalise = normalise
 
-    def _make_decision(self):
+    def _get_direction(self, k=0.7):
         activations = self._clean_activations(self.normalise, self.threshold)
+        print(activations)
+        left, centre, right = activations
 
-        if sum(activations) == 0:
-            # TODO Nothing happens
-            pass
-
-        else:
-            # TODO: Compute strength turn
-            pass
-        return None
+        # Sigmoid explained here:
+        # https://www.desmos.com/calculator/z20ylaritk
+        angle = 180 * 1 / (1 + np.exp(- k * (centre + 0.2) * (right - left))) - 90
+        return angle
         
 
-    def step(self, flows):        
-        activations = self._add_new_activations(flows)
-        decisions = self._make_decision()
+    
+
+
+class SaccadeBehaviour(AvoidanceBehaviour):
+
+    def __init__(self, camera, threshold=1.6, normalise=[4000, 85, 4500], 
+                 num_filters=5, dual=False):
+        super(SaccadeBehaviour, self).__init__(
+            camera, num_filters=num_filters, dual=dual
+            )
+
+        self.threshold = threshold
+        self.normalise = normalise
+
+    def _get_direction(self):
+        raw_activations = self.activations
+        activations = self._clean_activations(self.normalise, self.threshold)
+        left, centre, right = activations
+        left_angle, right_angle = 45, -45
         
-        return self.activations, decisions
+        if centre:  # If a centre activation is detected
+            # If left is detected too, but not right
+            # move right
+            print('Centre detected')
+            if left and not right:
+                print('Left and not right detected')
+                return right_angle
+
+            elif right and not left:
+                print('Right and not left detected')
+                return left_angle
+            # If neither is detected, move in the direction
+            # of less activation
+            elif not right and not left:
+                print('Neither detected')
+                raw_left = sum(raw_activations[0]) / self.normalise[0]
+                raw_right = sum(raw_activations[2]) / self.normalise[2]
+                if raw_right > raw_left:
+                    return left_angle
+                return right_angle
+            return 180
+        return 0
         
         
         

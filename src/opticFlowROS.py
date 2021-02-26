@@ -21,7 +21,7 @@ from camera_labels import *
 from camera import Camera
 import rospy
 import sys
-from avoidance_behaviours import TunnelCenteringBehaviour, AvoidanceBehaviour
+from avoidance_behaviours import TunnelCenteringBehaviour, AvoidanceBehaviour, SaccadeBehaviour
 
 try:
    from queue import Queue
@@ -38,7 +38,7 @@ NODE_NAME = 'pyx4_avoidance_node'
 
 class OpticFlowROS():
    
-   def __init__(self, node_name,
+   def __init__(self, node_name, avoidance_type,
                 target_vel = 2,
                 cam_0_topic='/resize_img/image', 
                 cam_45_topic='/resize_img_45/image', 
@@ -88,16 +88,6 @@ class OpticFlowROS():
 
       self.vel = np.zeros(3)
       self.target_vel = target_vel
-
-      self.decision_makers = {
-         C0: DecisionMaker(self.target_vel, min_decisions=2, maxlen='1+', min_gradient_constant=0.005),
-         C45: DecisionMaker(self.target_vel, min_decisions=1,
-                            min_gradient_constant=0.03, maxlen='2*', 
-                            check_outliers=False),
-         CN45: DecisionMaker(self.target_vel, min_decisions=1, 
-                             min_gradient_constant=0.03, maxlen='2*',
-                             check_outliers=False),
-      }
             
       self.subscribers(wait_for_imtopic_s)
       self.publishers()
@@ -107,31 +97,21 @@ class OpticFlowROS():
          C45: OpticFlow(camera_instance=self.cam),
          CN45: OpticFlow(camera_instance=self.cam),
       }
-      
-      self.matched_filters = {
-         C0: self.get_matched_filter(self.cam),
-         C45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
-         CN45: self.get_matched_filter(self.cam, axis=[0.0, 0.0, 0.0]),
-      }
 
       self._init_data_collection(data_collection)
 
-      self.side_decisions = {
-         C45: deque([], maxlen=5),
-         CN45: deque([], maxlen=5),
-      }
-
-      self.activations = {
-         C0: deque([], maxlen=10),
-         C45: deque([], maxlen=10),
-         CN45: deque([], maxlen=10),
-      }
-
-
       self.cameras = [C45, C0, CN45]
-      self.tunnel_activations = [deque([], maxlen=10) for _ in range(3)]
       self.last_flows = {C0: [], C45: [], CN45: []}
-      self.tunnel_centering = TunnelCenteringBehaviour(self.cam, num_filters=1, dual=False)
+
+      self.avoidance_type = avoidance_type
+
+      if self.avoidance_type == 'tunnel-centering':
+         self.behaviour = TunnelCenteringBehaviour(self.cam)
+
+      elif self.avoidance_type == 'saccade':
+         self.behaviour = SaccadeBehaviour(self.cam)
+
+      self.is_ready = False
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -147,42 +127,6 @@ class OpticFlowROS():
    def publishers(self):
       """Initialise publishers
       """
-      self.flow_publishers = {
-         C0: rospy.Publisher(self.node_name + '/optic_flow', FlowMsg, queue_size=10),
-         C45: rospy.Publisher(self.node_name + '/optic_flow_c45', FlowMsg, queue_size=10),
-         CN45: rospy.Publisher(self.node_name + '/optic_flow_cn45', FlowMsg, queue_size=10)
-      }
-      
-      self.flow_msgs = {
-         C0: FlowMsg(),
-         C45: FlowMsg(),
-         CN45: FlowMsg()
-      }
-
-      self.activation_publishers = {
-         C0: rospy.Publisher(self.node_name + '/activation', ActivationMsg, queue_size=10),
-         C45: rospy.Publisher(self.node_name + '/activation_c45', ActivationMsg, queue_size=10),
-         CN45: rospy.Publisher(self.node_name + '/activation_cn45', ActivationMsg, queue_size=10)
-      }
-
-      self.activation_msgs = {
-         C0: ActivationMsg(),
-         C45: ActivationMsg(),
-         CN45: ActivationMsg()
-      }
-
-      self.decision_publishers = {
-         C0: rospy.Publisher(self.node_name + '/decision', DecisionMsg, queue_size=10),
-         C45: rospy.Publisher(self.node_name + '/decision_c45', DecisionMsg, queue_size=10),
-         CN45: rospy.Publisher(self.node_name + '/decision_cn45', DecisionMsg, queue_size=10)
-      }
-
-      # Int messages: 0 -> stop or obstacle; 1 -> go or clear
-      self.decision_msgs = {
-         C0: DecisionMsg(),
-         C45: DecisionMsg(),
-         CN45: DecisionMsg()
-      }
 
       self.avoidance_direction_publisher = rospy.Publisher(
          self.node_name + '/direction', AvoidanceDirectionMsg, queue_size=10
@@ -308,7 +252,10 @@ class OpticFlowROS():
       if data.flight_state in ('Teleoperation', 'Waypoint'):
          if self.data_collection:
             self.start_data_collection=True
-         self.start_decision_makers()
+         self.behaviour.start()
+         rospy.Timer(rospy.Duration(4), self.ready, oneshot=True)
+         
+         
    
    def camera_general_cb(self, cam, data):
       """Callback for the camera topic. Add the image to an image queue.
@@ -342,43 +289,18 @@ class OpticFlowROS():
       self.current_distance = (self.distance - 
                                np.sqrt(data.x ** 2 + data.y ** 2))
 
-   def publish_flow(self, flow, cam):
-      if self.OF_modules[cam].initialised:
-         cols = flow.shape[1]
-         flat_flow = list(np.ravel(flow))
-         self.flow_msgs[cam].header.stamp = rospy.Time.now()
-         self.flow_msgs[cam].cols = cols
-         self.flow_msgs[cam].flow = flat_flow
-         self.flow_publishers[cam].publish(self.flow_msgs[cam])
-
-   def publish_activation(self, activation, cam=C0):
-      if self.OF_modules[cam].initialised:
-         self.activation_msgs[cam].header.stamp = rospy.Time.now()
-         self.activation_msgs[cam].activation = activation
-         self.activation_publishers[cam].publish(self.activation_msgs[cam])
-
-   def publish_decision(self, d, cam):
-      """Publish a camera decision
-
-      Args:
-          d (int): 0 -> stop or obstacle; 1 -> go or clear
-          cam (str): C0, C45 or CN45
-      """
-      self.decision_msgs[cam].decision = d
-      self.decision_msgs[cam].header.stamp = rospy.Time.now()
-      self.decision_publishers[cam].publish(self.decision_msgs[cam])
-
-   def publish_direction(self, d):
+   
+   def publish_direction(self, angle, t):
       """Publish the main decision message, which will make
       the drone go back, go left or go right
 
       Args:
           d (str): left, back, or right
       """
-      self.avoidance_direction_msg.direction = d
+      self.avoidance_direction_msg.angle = angle
+      self.avoidance_direction_msg.type = t
       self.avoidance_direction_msg.header.stamp = rospy.Time.now()
       self.avoidance_direction_publisher.publish(self.avoidance_direction_msg)
-
 
    def publish_tunnel_data(self, activations):
       if self.start_data_collection:
@@ -389,83 +311,6 @@ class OpticFlowROS():
          self.avoidance_data_tunnel_msg.activation_2=list(activations[2])
          self.avoidance_data_tunnel_publisher.publish(self.avoidance_data_tunnel_msg)
             
-
-   def get_matched_filter(self, cam, orientation=[0.0, 0.0, 0.0], axis=[0.0, 0.0, 0.0]):
-      return MatchedFilter(
-         cam.w, cam.h, 
-         (cam.fovx_deg, cam.fovy_deg), orientation=orientation, axis=axis
-      ).matched_filter
-
-   def reset_desicion_makers(self):
-      for c in self.decision_makers:
-         self.decision_makers[c].reset()
-
-   def start_decision_makers(self):
-      self.decision_makers[C0].start()
-      self.decision_makers[C45].start()
-      self.decision_makers[CN45].start()
-
-   def projection(self, vec):
-      u = vec[:2]
-      v = vec[2:]
-      return np.linalg.norm((np.dot(u, v) / np.dot(v, v)) * v)
-      #return (np.dot(u, v) / np.dot(v, v)) * v
-
-   def get_activation_new(self, cam, flow):
-      # a_mat = np.apply_along_axis(self.projection, 2, np.concatenate((flow, self.matched_filters[cam]), axis=2))
-      # return np.sum(a_mat)
-      return np.sum(flow * self.matched_filters[cam])
-      
-
-   def avoidance_step(self, cam, flow):
-      activation = self.get_activation_new(cam, flow)
-      self.activations[cam].append(activation)
-      return activation
-   
-      #self.publish_activation(activation, cam)
-
-      #if self.decision_makers[cam].started:
-       #  decision = self.decision_makers[cam].step(self.activations[cam], activation)
-         #self.publish_decision(decision, cam)
-         
-         # if decision:
-         #    if cam == C0:
-         #       dir = get_direction(self.side_decisions[C45], 
-         #                           self.side_decisions[CN45],
-         #                           self.activations[C45],
-         #                           self.activations[CN45],
-         #                           screen=True)
-
-         #       # This will be catched by the ROS node that will make the robot turn
-         #       self.publish_direction(dir)
-         #       # Turn off detection while turning
-         #       rospy.sleep(1.3)
-         #       # Reset the decision makers
-         #       self.reset_desicion_makers()
-         #       self.start_decision_makers()
-
-         # if cam != C0:
-         #    self.side_decisions[cam].append(decision)
-         
-
-   def report(self, cam):
-      to_report = [C0]
-      if cam in to_report:
-
-         grads = np.gradient(np.array(self.activations[cam]))
-         increasing = grads[np.where(grads > 0.001)]
-         distance = self.current_distance
-         
-         print('\nDistance: ')
-         print(self.current_distance)
-         print('Number of positive gradients')
-         print(len(increasing))
-         print('Mean activations:')
-         print(np.mean(self.activations[cam]))
-         print('Median activations:')
-         print(np.median(self.activations[cam]))
-         print('')
-
    def get_flows(self, draw_image=False):
       flows = []
       for i, cam in enumerate(self.cameras):
@@ -499,19 +344,30 @@ class OpticFlowROS():
                
          flows.append(flow)
       return flows
+
+   def ready(self, t):
+      self.is_ready = True
+
        
    def main(self):
+            
       while not rospy.is_shutdown():
+            
+         flows = self.get_flows(draw_image=False)
          
-         flows = self.get_flows(draw_image=2)
-
-         if flows:
-            
-            activations, decisions = self.tunnel_centering.step(flows)               
-            self.publish_tunnel_data(activations)
-            
-
-
+         if flows and self.is_ready:
+            activations, direction = self.behaviour.step(flows)
+            if activations:
+               self.publish_tunnel_data(activations)               
+            if direction and not self.data_collection:
+               self.publish_direction(direction, 'relative')
+               self.behaviour.reset()
+               self.is_ready = False
+               if direction > 45:
+                  duration = 1.5
+               else: duration = 1.25
+               rospy.Timer(rospy.Duration(duration), self.ready, oneshot=True)
+               last_changed = True
             
 
          if self.data_collection and self.current_distance < 2:
@@ -528,7 +384,7 @@ if __name__ == '__main__':
    parser.add_argument('--velocity', '-v', type=float, default=2.0)    
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=True)
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False, avoidance_type='tunnel-centering')
    OF.main()
       
         
