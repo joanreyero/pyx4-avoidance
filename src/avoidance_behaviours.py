@@ -89,7 +89,7 @@ class AvoidanceBehaviour(object):
 
 class TunnelCenteringBehaviour(AvoidanceBehaviour):
 
-    def __init__(self, camera, threshold=1.6, normalise=[5000, 90, 5800], 
+    def __init__(self, camera, threshold=1.6, normalise=[5000, 110, 5800], 
                  num_filters=5, dual=False):
         super(TunnelCenteringBehaviour, self).__init__(
             camera, num_filters=num_filters, dual=dual
@@ -98,14 +98,14 @@ class TunnelCenteringBehaviour(AvoidanceBehaviour):
         self.threshold = threshold
         self.normalise = normalise
 
-    def _get_direction(self, k=0.7):
+    def _get_direction(self, k=1):
         activations = self._clean_activations(self.normalise, self.threshold)
         print(activations)
         left, centre, right = activations
 
         # Sigmoid explained here:
         # https://www.desmos.com/calculator/z20ylaritk
-        angle = 180 * 1 / (1 + np.exp(- k * (centre + 0.2) * (right - left))) - 90
+        angle = 180 * 1 / (1 + np.exp(- k * (centre + 0.1) * (right - left))) - 90
         return angle
         
 
@@ -114,7 +114,7 @@ class TunnelCenteringBehaviour(AvoidanceBehaviour):
 
 class SaccadeBehaviour(AvoidanceBehaviour):
 
-    def __init__(self, camera, threshold=1.6, normalise=[4000, 85, 4500], 
+    def __init__(self, camera, threshold=1.65, normalise=[4000, 85, 4500], 
                  num_filters=5, dual=False):
         super(SaccadeBehaviour, self).__init__(
             camera, num_filters=num_filters, dual=dual

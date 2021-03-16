@@ -6,42 +6,45 @@ from os.path import isfile, join
 
 TOPIC = '/mavros/local_position/pose'
 
+TUNNEL, SACCADE = 'tunnel', 'saccade'
+TUNNEL_F, SACCADE_F = 'tunnel_failed', 'saccade_failed'
 
-def parse_bags(marker, topic=TOPIC):
-    path = 'bags/'
-    files = get_files(marker, path)
-    positions = []
+
+def failed_alg(alg):
+    return {TUNNEL: TUNNEL_F, SACCADE: SACCADE_F}[alg]
+
+
+def parse_bags(path, topic=TOPIC, failed=[]):
+    path = join('bags/', path)
+    files = get_files(path)
+    print(files)
+    positions = {TUNNEL: [], TUNNEL_F: [], SACCADE: [], SACCADE_F: []}
+    
     for f in files:
-        bag = rosbag.Bag(join('bags/', f))
-        positions.append(read_bag(bag, topic, savearr=f))
+        bag = rosbag.Bag(join(path, f))
+        alg = f[:f.find('-')]
+        if f in failed:
+            positions[failed_alg(alg)].append(read_bag(bag, topic))
+        else: 
+            positions[alg].append(read_bag(bag, topic))
+        
     return positions
         
 
-def get_files(marker, path):
-    marker = str(marker)
-    files = [f for f in listdir(path) if isfile(join(path, f)) 
-             and f[:len(marker)] == marker]
+def get_files(path):
+    files = [f for f in listdir(path) if isfile(join(path, f))]
     return files
 
 
-def read_bag(bag, topic, savearr=False):
+def read_bag(bag, topic):
     positions = []
     for topic, msg, t in bag.read_messages(topics=[topic]):
         data = msg.pose.position
         positions.append((data.x, data.y))
     
     positions = np.array(positions)
-
-    if savearr:
-        #from tempfile import TemporaryFile
-        #outfile = TemporaryFile()
-        np.save(join('npys', savearr[:savearr.find('.')]), positions)
     return positions
 
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument('--marker', '-m', type=int, default=0)
-    args = parser.parse_args()
-    parse_bags(args.marker)
+    parse_bags('90-degree')

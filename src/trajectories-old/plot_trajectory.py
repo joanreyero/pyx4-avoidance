@@ -4,7 +4,6 @@ import csv
 from os import listdir
 from os.path import isfile, join
 from trajectory_vars import *
-from read_bags import parse_bags
 
 
 #plt.style.use('dark_background')
@@ -44,7 +43,7 @@ def get_files(marker, path):
 
 
 def read_world(fname):
-    with open(join('worlds/', fname + '.csv')) as world_file:
+    with open(join('csv/', fname + '.csv')) as world_file:
         reader = csv.DictReader(world_file, delimiter=',')
         rows = []
         for row in reader:
@@ -52,11 +51,11 @@ def read_world(fname):
         return rows
 
 
-def plot_trajectory(path, fname_world):
+def plot_trajectory(marker, fname_world):
 
     # Obstacles
     obstacles = read_world(fname_world)
-    #fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))
     xs, ys = [], []
     c = 0.65
     
@@ -65,26 +64,26 @@ def plot_trajectory(path, fname_world):
         ys.append(- float(obstacle[Y]))
 
 
-    # ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize=10, label='tree')
-    # for size in np.linspace(0, 1, 21):
-    #     ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize= c * size * float(obstacle[SIZE]), alpha=max(0.1, 0.8-size))
+    ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize=10, label='tree')
+    for size in np.linspace(0, 1, 21):
+        ax.plot(ys, xs, 'o', color=COLORS['tree'], markersize= c * size * float(obstacle[SIZE]), alpha=max(0.1, 0.8-size))
 
     
     # Trajectories
-    trajectories = parse_bags(path)
+    trajectories = read_arrays(marker)
     xs, ys = [], []
-    # for trajectory in trajectories:
-    #     xs = trajectory['points'][:, 0]
-    #     ys = -1. * trajectory['points'][:, 1]
-    #     label = trajectory['vel']
-    #     ax.plot(ys, xs, color=COLORS[label], label=label, alpha=1)
-    # ax.legend()
-    # ax.set_xlim(-20, 40)
-    # ax.set_ylim(10, 70)
-    # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    # plt.savefig('figs/' + str(marker) + '-trajectories-' + fname_world + '.pdf')
+    for trajectory in trajectories:
+        xs = trajectory['points'][:, 0]
+        ys = -1. * trajectory['points'][:, 1]
+        label = trajectory['vel']
+        ax.plot(ys, xs, color=COLORS[label], label=label, alpha=1)
+    ax.legend()
+    ax.set_xlim(-20, 40)
+    ax.set_ylim(10, 70)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.savefig('figs/' + str(marker) + '-trajectories-' + fname_world + '.pdf')
 
 
 
 
-plot_trajectory('90-degree', 'corridor-90')
+plot_trajectory(0, 'circuit-trees')

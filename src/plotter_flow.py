@@ -1,9 +1,32 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
+from os.path import join
 
 
-def draw_flow(flow, img, step=5, filter_img=None):
+def save_flow(flow, img, name, prefix):
+    hsv_mask = np.zeros_like(img) 
+    hsv_mask = np.expand_dims(hsv_mask, axis=2)
+    hsv_mask = np.dstack((hsv_mask, hsv_mask, hsv_mask))
+    # Make image saturation to a maximum value 
+    hsv_mask[..., 1] = 255
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1]) 
+    # Set image hue value according to the angle of optical flow 
+
+    hsv_mask[..., 0] = ang * 180 / np.pi / 2
+    # Set value as per the normalized magnitude of optical flow 
+    hsv_mask[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX) 
+    # Convert to rgb 
+    rgb_representation = cv2.cvtColor(hsv_mask, cv2.COLOR_HSV2BGR)
+
+    path = '/home/joanreyero/ros_workspaces/pyx4_ws/src/pyx4_avoidance/src/analytics/flows'
+    
+    save = join(path, prefix + '-' + str(name) + '.png')
+    cv2.imwrite(save, rgb_representation)
+
+
+
+def draw_flow(flow, img, step=5, filter_img=None, new=True, save=False):
     """
 
     :param flow:
@@ -12,7 +35,6 @@ def draw_flow(flow, img, step=5, filter_img=None):
     :param filter_img: optional - if using matched filters we can overlay the image filter defined by this variable
     :return:
     """
-
 
     # if empty_im_flag:
     #     img = np.ones((flow.shape[0], flow.shape[1], 3))

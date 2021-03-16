@@ -79,6 +79,7 @@ class OpticFlow(object):
                 pyr_scale=0.5,
                 levels=3,
                 winsize=50,
+                # winsize=10,
                 iterations=3,
                 poly_n=5,
                 poly_sigma=1.1,

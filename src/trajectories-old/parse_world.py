@@ -4,13 +4,12 @@ import csv
 from trajectory_vars import *
 
 
+root = ET.parse('example.sdf').getroot()
 
 
 def parse_world(path, fname):
     f = os.path.join(path, fname + '.sdf')
-    root = ET.parse(os.path.join(path, fname) + '.world').getroot()
-    
-    with open(os.path.join('worlds/', fname + '.csv'), 'w') as file:
+    with open(os.path.join('csv/', fname + '.csv'), 'w') as file:
         writer = csv.writer(file)
         writer.writerow([NAME, SIZE, X, Y])
         for obstacle in OBSTACLES:

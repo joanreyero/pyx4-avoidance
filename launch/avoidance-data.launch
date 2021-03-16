@@ -5,7 +5,7 @@
     <arg name="bag_name" default="new"/>
     <arg name="save" default="false"/>
     <arg name="vel" default="1"/>
-    <arg name="data-collection" value="False"/>
+    <arg name="data-collection" value="True"/>
 
 
     <arg name="kinky_walk_noise_flag" default="false" />
@@ -99,7 +99,7 @@
     Optic flow node
     <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="screen"
     args="
-            --data_collection $(arg data-collection)
+            --data_collection
             --velocity $(arg vel)
           "/> 
  

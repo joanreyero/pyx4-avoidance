@@ -3,8 +3,8 @@
     <arg name="vehicle" default="typhoon_vision"/>
     <arg name="gui" default="true"/>
     <arg name="bag_name" default="new"/>
-    <arg name="save" default="false"/>
     <arg name="vel" default="1"/>
+    <arg name="save" default="flow"/>
 
 
     <arg name="kinky_walk_noise_flag" default="false" />
@@ -37,9 +37,9 @@
     <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img">
         <param name="use_scale" type="bool" value="false" />
         <!-- <param name="width" type="int" value="235" /> -->
-        <param name="width" type="int" value="135" />
+        <param name="width" type="int" value="240" />
         <!-- <param name="height" type="int" value="150" /> -->
-        <param name="height" type="int" value="40" />
+        <param name="height" type="int" value="135" />
         <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
         <!-- remap input topics -->
         <remap from="image" to="/cam_0/image_mono"/>
@@ -51,8 +51,8 @@
 
     <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img_45">
         <param name="use_scale" type="bool" value="false" />
-        <param name="width" type="int" value="135" />
-        <param name="height" type="int" value="40" />
+        <param name="width" type="int" value="240" />
+        <param name="height" type="int" value="135" />
         <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
         <!-- remap input topics -->
         <remap from="image" to="/cam_45/image_mono"/>
@@ -64,35 +64,30 @@
 
     <node pkg="nodelet" type="nodelet" args="standalone image_proc/resize" name="resize_img_n45">
         <param name="use_scale" type="bool" value="false" />
-        <param name="width" type="int" value="135" />
-        <param name="height" type="int" value="40" />
+        <param name="width" type="int" value="240" />
+        <param name="height" type="int" value="135" />
         <param name="interpolation" type="int" value="0" />           reference interpolation enum = (0, 'Nearest neighbor', 1, 'Linear', 2, 'Cubic', 4, 'Lanczos4')
         <!-- remap input topics -->
-        <remap from="image" to="/cam_n45/image_mono"/>
-        <remap from="camera_info" to="/cam_n45/camera_info"/>
+        <remap from="image" to="/cam_45/image_mono"/>
+        <remap from="camera_info" to="/cam_45/camera_info"/>
         <!-- remap output topics -->
         <remap from="/resize_image/image" to="/camera_resize/image_raw"/>
         <remap from="/resize_image/camera_info" to="/camera_resize/camera_info"/>
     </node>
 
-
-    <!-- pyx4_avoidance NODE -->
-    <node pkg="pyx4_avoidance" type="avoidanceDemo.py" name="pyx4_avoidance_demo" output="screen"
+    pyx4_avoidance NODE
+    <node pkg="pyx4_avoidance" type="missionAvoidance.py" name="pyx4_avoudance_data_mission" output="screen"
         args="
-          --velocity $(arg vel)
-          "/>   
-
+          --xvel $(arg vel)
+          "/>        
+    
+    Optic flow node
     <node pkg="pyx4_avoidance" type="opticFlowROS.py" name="optic_flow" output="screen"
-            args="
+    args="
+            --data_collection
             --velocity $(arg vel)
-          "/>
-
-    <node pkg="rosbag" type="record" name="bagger" output="screen"
-          args="
-          -O $(find pyx4_avoidance)/src/trajectories/$(arg save).bag
-          /mavros/local_position/pose
-          /pyx4_avoidance_node/decision
-          /pyx4_avoidance_node/direction
-         " if="$(eval save != false)"/>
+            --save_flow $(arg save)
+          "/> 
+ 
 
 </launch>

@@ -45,13 +45,16 @@ class OpticFlowROS():
                 cam_n45_topic='/resize_img_n45/image', 
                 cam_info="/resize_img/camera_info", 
                 wait_for_imtopic_s=100,
-                data_collection=False):
+                data_collection=False,
+                save_flow=''):
       
       self.node_name = node_name
 
       # Init empty cameras
       self.cam = None
       self.cam_info = cam_info
+
+      self.save_flow = save_flow
 
       # To iterate
       self.cam_iter = [C0, C45, CN45]
@@ -112,6 +115,7 @@ class OpticFlowROS():
          self.behaviour = SaccadeBehaviour(self.cam)
 
       self.is_ready = False
+      self._central_ready = True
 
    def _init_data_collection(self, data_collection):
       self.start_data_collection = False
@@ -336,10 +340,21 @@ class OpticFlowROS():
 
             self.last_flows[cam] = flow
 
-            if draw_image == i:
-               draw = plotter_flow.draw_flow(flow, this_image)
+            if draw_image == i and draw_image:
+               draw = plotter_flow.draw_flow(flow, this_image, save=round(self.current_distance, 2))
                im_msg = bridge.cv2_to_imgmsg(draw, encoding="passthrough")
                self.draw_publisher.publish(im_msg)
+
+            if i == 1 and self.save_flow:
+               if ((self.current_distance < 21 and self.current_distance > 19) or
+                   (self.current_distance < 11 and self.current_distance > 9) or
+                   (self.current_distance < 6 and self.current_distance > 4)):
+                                     
+                  plotter_flow.save_flow(flow, this_image, 
+                                       int(self.current_distance), 
+                                       self.save_flow)
+               
+               
 
                
          flows.append(flow)
@@ -348,12 +363,17 @@ class OpticFlowROS():
    def ready(self, t):
       self.is_ready = True
 
+   def central_ready(self, t):
+      self._central_ready = True
+
        
    def main(self):
             
       while not rospy.is_shutdown():
             
          flows = self.get_flows(draw_image=False)
+         if not self._central_ready:
+            flows[1] *= 0
          
          if flows and self.is_ready:
             activations, direction = self.behaviour.step(flows)
@@ -363,11 +383,18 @@ class OpticFlowROS():
                self.publish_direction(direction, 'relative')
                self.behaviour.reset()
                self.is_ready = False
-               if direction > 45:
-                  duration = 1.5
-               else: duration = 1.25
+               print('Direction: ' + str(direction))
+               if abs(direction) > 45:
+                  self._central_ready = False
+                  duration = 3
+                  rospy.Timer(rospy.Duration(5), self.central_ready, oneshot=True)
+                  
+               else: 
+                  if self.avoidance_type == 'saccade':
+                     duration = 2
+                  else:
+                     duration = 1
                rospy.Timer(rospy.Duration(duration), self.ready, oneshot=True)
-               last_changed = True
             
 
          if self.data_collection and self.current_distance < 2:
@@ -380,11 +407,13 @@ if __name__ == '__main__':
    import argparse
    parser = argparse.ArgumentParser(description="")
    # Stuff that goes in teleop
-   parser.add_argument('--data_collection', '-d', type=bool, default=False)    
-   parser.add_argument('--velocity', '-v', type=float, default=2.0)    
+   parser.add_argument('--data_collection', '-d', action='store_true')    
+   parser.add_argument('--save_flow', type=str, default='')    
+   parser.add_argument('--velocity', '-v', type=float, default=2.0)
+   
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=False, avoidance_type='tunnel-centering')
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=args.data_collection, save_flow=args.save_flow, avoidance_type='saccade')
    OF.main()
       
         
