@@ -413,7 +413,7 @@ if __name__ == '__main__':
    
    args = parser.parse_args(rospy.myargv(argv=sys.argv)[1:])
   
-   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=args.data_collection, save_flow=args.save_flow, avoidance_type='saccade')
+   OF = OpticFlowROS(NODE_NAME, target_vel=args.velocity, data_collection=args.data_collection, save_flow=args.save_flow, avoidance_type='tunnel-centering')
    OF.main()
       
         
