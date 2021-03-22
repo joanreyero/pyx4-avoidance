@@ -106,10 +106,12 @@ class TunnelCenteringBehaviour(AvoidanceBehaviour):
         # Sigmoid explained here:
         # https://www.desmos.com/calculator/z20ylaritk
         angle = 180 * 1 / (1 + np.exp(- k * (centre + 0.1) * (right - left))) - 90
+
+        if centre and not (left + right):
+            print('Triggering exception!')
+            angle = np.random.choice([-1, 1]) * 60
         return angle
         
-
-    
 
 
 class SaccadeBehaviour(AvoidanceBehaviour):
