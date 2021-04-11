@@ -352,10 +352,7 @@ class OpticFlowROS():
                                      
                   plotter_flow.save_flow(flow, this_image, 
                                        int(self.current_distance), 
-                                       self.save_flow)
-               
-               
-
+                                       self.save_flow, just_img=False)
                
          flows.append(flow)
       return flows

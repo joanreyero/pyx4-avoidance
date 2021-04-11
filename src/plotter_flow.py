@@ -4,7 +4,7 @@ import cv2
 from os.path import join
 
 
-def save_flow(flow, img, name, prefix):
+def save_flow(flow, img, name, prefix, just_img=False):
     hsv_mask = np.zeros_like(img) 
     hsv_mask = np.expand_dims(hsv_mask, axis=2)
     hsv_mask = np.dstack((hsv_mask, hsv_mask, hsv_mask))
@@ -20,9 +20,11 @@ def save_flow(flow, img, name, prefix):
     rgb_representation = cv2.cvtColor(hsv_mask, cv2.COLOR_HSV2BGR)
 
     path = '/home/joanreyero/ros_workspaces/pyx4_ws/src/pyx4_avoidance/src/analytics/flows'
-    
     save = join(path, prefix + '-' + str(name) + '.png')
-    cv2.imwrite(save, rgb_representation)
+    if just_img:
+        cv2.imwrite(save, img)
+    else:
+        cv2.imwrite(save, rgb_representation)
 
 
 

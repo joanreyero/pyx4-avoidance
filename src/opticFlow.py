@@ -8,6 +8,7 @@ import rospy
 import cv2
 import numpy as np
 import os
+import time
 
 
 class OpticFlow(object):
@@ -85,6 +86,7 @@ class OpticFlow(object):
                 poly_sigma=1.1,
                 flags=0
             )
+
 
             self.time_between_frames_s = (self._time_array[0] - 
                                           self._time_array[1])
